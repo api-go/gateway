@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"apigo.cc/go/log"
 	"apigo.cc/go/redis"
@@ -42,7 +43,6 @@ func TestGateway(t *testing.T) {
 	// 3. 配置 Gateway
 	GatewayConf.Redis = registry
 	GatewayConf.Prefix = "gateway"
-	GatewayConf.Channel = "gateway:channel"
 
 	// 初始化网关的配置到 Redis
 	proxyRules := []service.ProxyRule{
@@ -73,13 +73,8 @@ func TestGateway(t *testing.T) {
 
 	// 4. 启动 Gateway 应用
 	app := NewGatewayApp()
-	err := app.Init()
-	if err != nil {
-		t.Fatalf("Failed to init gateway: %v", err)
-	}
-	defer app.Stop()
-
-	// 启动网关的 HTTP 监听
+	
+	// 设置独立的端口给 Gateway 的 WebServer 避免与 backend 冲突
 	service.Config.App = "gateway"
 	service.Config.Listen = ":0"
 	// 重置发现，确保网关独立
@@ -89,11 +84,17 @@ func TestGateway(t *testing.T) {
 	service.Config.Calls = map[string]service.CallConfig{
 		"test-backend": {Timeout: 1000},
 	}
-	asGw := service.AsyncStart()
-	defer asGw.Stop()
+
+	ctx := context.Background()
+	err := app.Start(ctx, log.DefaultLogger)
+	if err != nil {
+		t.Fatalf("Failed to start gateway: %v", err)
+	}
+	defer app.Stop(ctx)
+
 	time.Sleep(200 * time.Millisecond)
 	
-	_, gwPort, _ := net.SplitHostPort(asGw.Addr)
+	_, gwPort, _ := net.SplitHostPort(app.Addr)
 
 	client := &gohttp.Client{Timeout: 2 * time.Second}
 
