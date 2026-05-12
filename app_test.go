@@ -35,6 +35,9 @@ func TestGateway(t *testing.T) {
 	service.Host("*").GET("/hello", func(req *service.Request) string {
 		return "hello from backend, path: " + req.RequestURI
 	})
+	service.Host("*").GET("/hello/world", func(req *service.Request) string {
+		return "hello from backend, path: " + req.RequestURI
+	})
 
 	asBackend := service.AsyncStart()
 	defer asBackend.Stop()
@@ -48,6 +51,7 @@ func TestGateway(t *testing.T) {
 	proxyRules := []service.ProxyRule{
 		{Path: "^/api/(.*)$", ToApp: "test-backend", ToPath: "/$1"},
 		{Path: "/direct", ToApp: "test-backend", ToPath: "/hello"},
+		{Path: "/v2/*", ToApp: "test-backend", ToPath: "/hello/*"},
 	}
 	rewriteRules := []service.RewriteRule{
 		{Path: "^/old-api/(.*)$", ToPath: "/api/$1"},
@@ -56,7 +60,6 @@ func TestGateway(t *testing.T) {
 	proxyJson, _ := json.Marshal(proxyRules)
 	rewriteJson, _ := json.Marshal(rewriteRules)
 	
-	rd.Do("SADD", "gateway:hosts", "gw.test")
 	rd.Do("HSET", "gateway:host:gw.test", "proxies", string(proxyJson))
 	rd.Do("HSET", "gateway:host:gw.test", "rewrites", string(rewriteJson))
 
@@ -128,6 +131,22 @@ func TestGateway(t *testing.T) {
 	}
 	if err != nil || !strings.Contains(body, "hello from backend, path: /hello?a=1") {
 		t.Fatalf("Proxy regexp failed, got: %s", body)
+	}
+
+	// ============================================
+	// 测试 2.1: 极速通配符前缀匹配 (Discover)
+	// ============================================
+	req, _ = gohttp.NewRequest("GET", "http://127.0.0.1:"+gwPort+"/v2/world?x=2", nil)
+	req.Host = "gw.test"
+	res, err = client.Do(req)
+	body = ""
+	if err == nil && res != nil {
+		b, _ := io.ReadAll(res.Body)
+		res.Body.Close()
+		body = string(b)
+	}
+	if err != nil || !strings.Contains(body, "hello from backend, path: /hello/world?x=2") {
+		t.Fatalf("Proxy wildcard failed, got: %s", body)
 	}
 
 	// ============================================

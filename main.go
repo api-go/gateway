@@ -12,7 +12,24 @@ func main() {
 	_ = config.Load(&GatewayConf, "gateway")
 
 	// 2. 初始化 Starter 信息
-	starter.SetAppInfo("gateway", "2.0.0")
+	starter.SetAppInfo("gateway", "1.0.1")
+	starter.SetUsage(`High-performance API gateway based on apigo.cc/go/service.
+Full Guide: https://apigo.cc/go/service
+
+Example env.yml:
+  service:
+    Listen: ":80"
+    Proxies:
+      "api.example.com":
+        "/user/*": "user-svc/v1/*"  # KV Mode
+        "/auth": {"To": "auth-svc", "Auth": 1} # Object Mode
+  gateway:
+    Redis: "127.0.0.1:6379"
+
+Matching Logic:
+  - Exact: "/login"
+  - Prefix: "/api/*" (requires suffix "/*")
+  - Regex: "^/v1/(.*)$" (contains "(")`)
 
 	// 3. 注册 Gateway 服务
 	// GatewayApp 自身实现了 starter.Service 和 starter.Reloader 接口

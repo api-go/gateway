@@ -6,6 +6,7 @@ import (
 	"apigo.cc/go/redis"
 	"apigo.cc/go/service"
 	"context"
+	"fmt"
 	"strings"
 )
 
@@ -89,6 +90,20 @@ func (g *GatewayApp) Reload() error {
 	return err
 }
 
+// Status 返回网关运行状态
+func (g *GatewayApp) Status() (string, error) {
+	addr, err := g.WebServer.Status()
+	if err != nil {
+		return "", err
+	}
+	
+	hostCount := 0
+	if g.rd != nil {
+		hostCount = len(g.rd.Do("KEYS", GatewayConf.Prefix+":host:*").Strings())
+	}
+	return fmt.Sprintf("%s, dynamic_hosts: %d", addr, hostCount), nil
+}
+
 // loadAll 初始化或 Reload 阶段从 Redis 扫描所有网关配置并加载
 func (g *GatewayApp) loadAll(logger *log.Logger) {
 	if g.rd == nil {
@@ -97,9 +112,14 @@ func (g *GatewayApp) loadAll(logger *log.Logger) {
 
 	logger.Info("gateway loading full configuration")
 
-	hosts := g.rd.Do("SMEMBERS", GatewayConf.Prefix+":hosts").Strings()
-	for _, host := range hosts {
-		g.loadHost(host, logger)
+	// 直接从 Redis 扫描所有符合前缀的 Key (无需手动维护 hosts Set)
+	keys := g.rd.Do("KEYS", GatewayConf.Prefix+":host:*").Strings()
+	prefixLen := len(GatewayConf.Prefix + ":host:")
+	for _, key := range keys {
+		if len(key) > prefixLen {
+			host := key[prefixLen:]
+			g.loadHost(host, logger)
+		}
 	}
 }
 
