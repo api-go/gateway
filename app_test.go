@@ -24,7 +24,7 @@ func TestGateway(t *testing.T) {
 	}
 
 	// 清理测试数据
-	rd.Do("DEL", "gateway:proxies", "gateway:rewrites", "gateway:statics")
+	rd.Do("DEL", "gateway:host:gw.test", "gateway:hosts")
 
 	// 2. 启动一个后端测试服务 test-backend
 	service.Config.App = "test-backend"
@@ -56,8 +56,9 @@ func TestGateway(t *testing.T) {
 	proxyJson, _ := json.Marshal(proxyRules)
 	rewriteJson, _ := json.Marshal(rewriteRules)
 	
-	rd.Do("HSET", "gateway:proxies", "gw.test", string(proxyJson))
-	rd.Do("HSET", "gateway:rewrites", "gw.test", string(rewriteJson))
+	rd.Do("SADD", "gateway:hosts", "gw.test")
+	rd.Do("HSET", "gateway:host:gw.test", "proxies", string(proxyJson))
+	rd.Do("HSET", "gateway:host:gw.test", "rewrites", string(rewriteJson))
 
 	// 创建临时静态目录
 	tmpDir, _ := os.MkdirTemp("", "gateway-static")
@@ -68,7 +69,7 @@ func TestGateway(t *testing.T) {
 		"/ui": tmpDir,
 	}
 	staticJson, _ := json.Marshal(staticConfig)
-	rd.Do("HSET", "gateway:statics", "gw.test", string(staticJson))
+	rd.Do("HSET", "gateway:host:gw.test", "statics", string(staticJson))
 
 	// 4. 启动 Gateway 应用
 	app := NewGatewayApp()
@@ -168,12 +169,10 @@ func TestGateway(t *testing.T) {
 		{Path: "/new-direct", ToApp: "test-backend", ToPath: "/hello"},
 	}
 	newProxyJson, _ := json.Marshal(newProxyRules)
-	rd.Do("HSET", "gateway:proxies", "gw.test", string(newProxyJson))
+	rd.Do("HSET", "gateway:host:gw.test", "proxies", string(newProxyJson))
 	
 	// 发布更新消息
-	msg := EventMessage{Action: "update", Type: "proxy", Host: "gw.test"}
-	msgJson, _ := json.Marshal(msg)
-	rd.Do("PUBLISH", "gateway:channel", string(msgJson))
+	rd.Do("PUBLISH", "gateway:channel", `"gw.test"`)
 
 	// 等待接收和更新
 	time.Sleep(300 * time.Millisecond)

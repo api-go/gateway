@@ -6,14 +6,8 @@ import (
 	"apigo.cc/go/redis"
 	"apigo.cc/go/service"
 	"context"
+	"strings"
 )
-
-// EventMessage 定义从 Redis 接收到的更新事件结构
-type EventMessage struct {
-	Action string `json:"action"` // "update"
-	Type   string `json:"type"`   // "proxy", "rewrite", "static"
-	Host   string `json:"host"`
-}
 
 // Config 定义 Gateway 基础配置
 type Config struct {
@@ -30,9 +24,6 @@ var GatewayConf = Config{
 // GatewayApp 定义网关应用
 type GatewayApp struct {
 	rd             *redis.Redis
-	proxiesKey     string
-	rewritesKey    string
-	staticsKey     string
 	pubsubChannel  string
 	cancelPubSub   context.CancelFunc
 }
@@ -40,9 +31,6 @@ type GatewayApp struct {
 // NewGatewayApp 创建 Gateway
 func NewGatewayApp() *GatewayApp {
 	g := &GatewayApp{}
-	g.proxiesKey = GatewayConf.Prefix + ":proxies"
-	g.rewritesKey = GatewayConf.Prefix + ":rewrites"
-	g.staticsKey = GatewayConf.Prefix + ":statics"
 	g.pubsubChannel = GatewayConf.Channel
 	return g
 }
@@ -77,7 +65,7 @@ func (g *GatewayApp) Init() error {
 	return nil
 }
 
-// loadAll 初始化阶段从 Redis 的 Hash 表拉取全量配置并解析
+// loadAll 初始化阶段从 Redis 扫描所有网关配置并加载
 func (g *GatewayApp) loadAll() {
 	if g.rd == nil {
 		return
@@ -85,79 +73,62 @@ func (g *GatewayApp) loadAll() {
 
 	log.DefaultLogger.Info("gateway loading full configuration")
 
-	// 1. Proxies
-	proxiesHash := g.rd.Do("HGETALL", g.proxiesKey).StringMap()
-	for host, jsonStr := range proxiesHash {
-		var rules []service.ProxyRule
-		_ = cast.UnmarshalJSON([]byte(jsonStr), &rules)
-		service.ReplaceProxies(host, rules)
-	}
-
-	// 2. Rewrites
-	rewritesHash := g.rd.Do("HGETALL", g.rewritesKey).StringMap()
-	for host, jsonStr := range rewritesHash {
-		var rules []service.RewriteRule
-		_ = cast.UnmarshalJSON([]byte(jsonStr), &rules)
-		service.ReplaceRewrites(host, rules)
-	}
-
-	// 3. Statics
-	staticsHash := g.rd.Do("HGETALL", g.staticsKey).StringMap()
-	for host, jsonStr := range staticsHash {
-		var config map[string]string
-		_ = cast.UnmarshalJSON([]byte(jsonStr), &config)
-		if config != nil {
-			service.ReplaceStatics(host, config)
-		}
+	// 为了简化，由于 Redis KEYS 命令在线上不推荐，更好的方式是 Gateway 启动时只加载本地固定配置，
+	// 动态配置按需拉取？不，网关启动必须拉取全量。
+	// 但如果我们改成以 host 为 Key，就需要维护一个 Set 存放所有的 host，或者直接遍历 KEYS gateway:*
+	// 为了最佳实践，我们在 redis 维护一个 set: `gateway:hosts` 存放所有的域名
+	hosts := g.rd.Do("SMEMBERS", GatewayConf.Prefix+":hosts").Strings()
+	for _, host := range hosts {
+		g.loadHost(host)
 	}
 }
 
-// loadHost 仅加载指定 Host 下的指定类型配置
-func (g *GatewayApp) loadHost(typ string, host string) {
-	if g.rd == nil {
+// loadHost 加载指定 Host 下的所有类型配置
+func (g *GatewayApp) loadHost(host string) {
+	if g.rd == nil || host == "" {
 		return
 	}
 
-	switch typ {
-	case "proxy":
-		jsonStr := g.rd.Do("HGET", g.proxiesKey, host).String()
-		var rules []service.ProxyRule
-		if jsonStr != "" {
-			_ = cast.UnmarshalJSON([]byte(jsonStr), &rules)
-		}
-		service.ReplaceProxies(host, rules)
-		log.DefaultLogger.Info("gateway proxy updated via pub/sub", "host", host, "count", len(rules))
-	case "rewrite":
-		jsonStr := g.rd.Do("HGET", g.rewritesKey, host).String()
-		var rules []service.RewriteRule
-		if jsonStr != "" {
-			_ = cast.UnmarshalJSON([]byte(jsonStr), &rules)
-		}
-		service.ReplaceRewrites(host, rules)
-		log.DefaultLogger.Info("gateway rewrite updated via pub/sub", "host", host, "count", len(rules))
-	case "static":
-		jsonStr := g.rd.Do("HGET", g.staticsKey, host).String()
-		var config map[string]string
-		if jsonStr != "" {
-			_ = cast.UnmarshalJSON([]byte(jsonStr), &config)
-		}
-		if config == nil {
-			config = make(map[string]string)
-		}
-		service.ReplaceStatics(host, config)
-		log.DefaultLogger.Info("gateway static updated via pub/sub", "host", host, "count", len(config))
+	hashKey := GatewayConf.Prefix + ":host:" + host
+	hashMap := g.rd.Do("HGETALL", hashKey).StringMap()
+
+	// 1. Proxies
+	var proxyRules []service.ProxyRule
+	if jsonStr := hashMap["proxies"]; jsonStr != "" {
+		_ = cast.UnmarshalJSON([]byte(jsonStr), &proxyRules)
 	}
+	service.ReplaceProxies(host, proxyRules)
+
+	// 2. Rewrites
+	var rewriteRules []service.RewriteRule
+	if jsonStr := hashMap["rewrites"]; jsonStr != "" {
+		_ = cast.UnmarshalJSON([]byte(jsonStr), &rewriteRules)
+	}
+	service.ReplaceRewrites(host, rewriteRules)
+
+	// 3. Statics
+	var staticConfig map[string]string
+	if jsonStr := hashMap["statics"]; jsonStr != "" {
+		_ = cast.UnmarshalJSON([]byte(jsonStr), &staticConfig)
+	}
+	if staticConfig == nil {
+		staticConfig = make(map[string]string)
+	}
+	service.ReplaceStatics(host, staticConfig)
+
+	log.DefaultLogger.Info("gateway host configuration updated via pub/sub", "host", host, 
+		"proxies", len(proxyRules), "rewrites", len(rewriteRules), "statics", len(staticConfig))
 }
 
 func (g *GatewayApp) subscribe(ctx context.Context) {
 	log.DefaultLogger.Info("gateway subscribed to redis channel", "channel", g.pubsubChannel)
 	g.rd.Subscribe(g.pubsubChannel, nil, func(data []byte) {
-		var msg EventMessage
-		if err := cast.UnmarshalJSON(data, &msg); err == nil && msg.Action == "update" {
+		host := string(data)
+		host = strings.TrimSpace(strings.Trim(host, "\"")) // 兼容裸字符串和 JSON 字符串
+		
+		if host != "" {
 			// 触发对应 Host 的局部刷新
-			g.loadHost(msg.Type, msg.Host)
-		} else {
-			log.DefaultLogger.Warning("gateway received invalid pub/sub message", "data", string(data))
+			g.loadHost(host)
 		}
 	})
 	
