@@ -1,57 +1,42 @@
 # @go/gateway
 
-基于 `@go/service` 和 Redis 的高性能、事件驱动的动态 API 网关。
+基于 `@go/service` 和 Redis 的高性能、事件驱动动态 API 网关。
+详细配置指南请参考核心文档：[https://apigo.cc/go/service](https://apigo.cc/go/service)
 
-`gateway` 专注于充当配置下发的搬运工，将路由匹配、转发等所有繁重工作剥离给底层的 `service` 核心。支持通过 Redis 进行 0 延迟、0 丢包的路由级全量/局部热更新。
+## 路由匹配逻辑 (AI-First 规范)
 
-## 功能特性
+为了确保 AI 模型和运维人员能够精准配置而不产生幻觉，网关遵循以下严格的路径匹配优先级：
 
-- **极致性能**：基于 `service` 包的 Copy-on-Write (写时复制) 原语，无锁构建，转发阶段无锁等待。
-- **事件驱动热更新**：摒弃轮询，监听 Redis Pub/Sub，精准下发变更配置，旧连接不受影响。
-- **服务发现原生集成**：与 `@go/discover` 无缝集成，支持基于服务名的直连与负载均衡。
-- **生命周期接管**：由 `@go/starter` 接管，支持通过 `kill -SIGHUP` 触发本地全量重新同步。
+### 1. 路径匹配 (Path Matching)
+- **精确匹配 (Exact)**: 
+  - 语法：`"Path": "/user/info"`
+  - 行为：仅当请求路径完全等于 `/user/info` 时触发。
+- **前缀匹配 (Prefix)**: 
+  - 语法：`"Path": "/api/*"` (**必须以 `/*` 结尾**)
+  - 行为：匹配所有以 `/api/` 开头的路径（如 `/api/login`, `/api/v1/status`）。
+  - *映射规则*: 若配置 `{"Path": "/v1/*", "ToPath": "/v2/*"}`，请求 `/v1/a` 将被转发至 `/v2/a`。
+- **正则匹配 (Regex)**:
+  - 语法：任何包含括号 `(` 的路径将被视为正则表达式。
+  - 示例：`"Path": "^/api/(.*)$"`。使用 `$1` 进行 `ToPath` 替换。
 
-## 配置模型 (Redis Hash)
+### 2. 域名选择 (Host Selection)
+匹配请求头中的 `Host` 字段，按以下顺序尝试，匹配即止：
+1. `example.com:8080` (精确域名 + 端口)
+2. `example.com` (仅域名，忽略端口)
+3. `:8080` (仅端口，匹配该端口下的所有 Host)
+4. `*` (全局兜底通配符)
 
-Gateway 将配置存储在 Redis 的 Hash 结构中，并按照 **Host (域名)** 进行字段隔离，提升拉取效率和管理粒度。
+## 动态配置模型 (Redis)
 
-- **`gateway:proxies`** 代理规则
-- **`gateway:rewrites`** 重写规则
-- **`gateway:statics`** 静态目录服务
+网关以 **Host (域名)** 为最小更新单元。更新某域名配置时，请向 Redis 频道发布该域名的纯字符串。
 
-### 结构示例
+- **存储结构 (Hash)**: 
+  - Key: `gateway:host:<hostname>` (例如 `gateway:host:api.example.com`)
+  - Fields: `proxies` (JSON数组), `rewrites` (JSON数组), `statics` (JSON对象)
+- **热更新通知 (Pub/Sub)**:
+  - Channel: `gateway:channel` (默认)
+  - Payload: `"api.example.com"` (域名原始字符串)
 
-假设配置的 Host 为 `api.example.com`:
-
-```json
-// HSET gateway:proxies "api.example.com"
-[
-  { "Path": "^/user/(.*)$", "AuthLevel": 0, "ToApp": "user-service", "ToPath": "/$1" },
-  { "Path": "/direct", "AuthLevel": 0, "ToApp": "http://10.0.0.1:8080", "ToPath": "/hello" }
-]
-
-// HSET gateway:rewrites "api.example.com"
-[
-  { "Path": "^/old-api/(.*)$", "ToPath": "/api/$1" }
-]
-
-// HSET gateway:statics "www.example.com"
-{
-  "/ui": "/var/www/html"
-}
-```
-
-## 动态热更新 API (Pub/Sub)
-
-无需重启进程，向 Redis 的 `gateway:channel` 频道发布 JSON 消息，网关会在收到消息后仅拉取变化的那一部分（局部全量更新）：
-
-```json
-{
-  "action": "update",
-  "type": "proxy", // 可选: "proxy", "rewrite", "static"
-  "host": "api.example.com"
-}
-```
 
 ## 启动与管理
 
