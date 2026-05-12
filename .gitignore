@@ -1,0 +1,7 @@
+.geminiignore
+.gemini
+.ai/
+env.json
+env.yml
+env.yaml
+.log.meta.json
