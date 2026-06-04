@@ -81,7 +81,7 @@ func TestGateway(t *testing.T) {
 	service.Config.App = "gateway"
 	service.Config.Listen = ":0"
 	// 重置发现，确保网关独立
-	service.GlobalDiscoverer = nil 
+	service.SetDiscovererForTest(nil)
 	// 配置网关可以通过 discover 找到 test-backend (网关也需要开启 discover)
 	service.Config.Register = registry
 	service.Config.Calls = map[string]service.CallConfig{
