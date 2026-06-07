@@ -7,8 +7,8 @@ require (
 	apigo.cc/go/config v1.5.1
 	apigo.cc/go/log v1.5.5
 	apigo.cc/go/redis v1.5.0
-	apigo.cc/go/service v1.5.11
-	apigo.cc/go/starter v1.5.2
+	apigo.cc/go/service v1.5.12
+	apigo.cc/go/starter v1.5.3
 )
 
 require apigo.cc/go/jsmod v1.5.0 // indirect

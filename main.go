@@ -37,7 +37,11 @@ Matching Logic:
 	starter.Register("gateway-core", app, 100, 5*time.Second, 10*time.Second)
 
 	// 4. 运行服务生命周期，响应 start/stop/reload 等命令
-	starter.Run()
+	if err := starter.Start(); err != nil {
+		log.DefaultLogger.Error("gateway start failed", "error", err)
+		return
+	}
+	starter.Wait()
 
 	log.DefaultLogger.Info("gateway process exited")
 }
