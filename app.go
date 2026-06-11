@@ -22,7 +22,6 @@ var GatewayConf = Config{
 
 // GatewayApp 定义网关应用，融合了 WebServer 的原生能力
 type GatewayApp struct {
-	*service.WebServer
 	rd            *redis.Redis
 	pubsubChannel string
 	cancelPubSub  context.CancelFunc
@@ -30,9 +29,7 @@ type GatewayApp struct {
 
 // NewGatewayApp 创建 Gateway
 func NewGatewayApp() *GatewayApp {
-	return &GatewayApp{
-		WebServer: service.NewWebServer(),
-	}
+	return &GatewayApp{}
 }
 
 // Start 启动网关服务 (实现 starter.Service)
@@ -62,7 +59,8 @@ func (g *GatewayApp) Start(ctx context.Context, logger *log.Logger) error {
 	}
 
 	// 启动底层的 WebServer，处理所有实际的 HTTP 连接和发现注册
-	return g.WebServer.Start(ctx, logger)
+	service.Start()
+	return nil
 }
 
 // Stop 停止网关服务 (实现 starter.Service)
@@ -74,13 +72,14 @@ func (g *GatewayApp) Stop(ctx context.Context) error {
 		g.rd.Unsubscribe(g.pubsubChannel)
 	}
 	// 停止底层的 WebServer
-	return g.WebServer.Stop(ctx)
+	// 注意：全局 service.Stop 目前在框架中可能由 starter 统一管理，或者手动调用 service.DefaultServer.Stop(ctx)
+	return service.DefaultServer.Stop(ctx)
 }
 
 // Reload 重载网关配置 (实现 starter.Reloader)
 func (g *GatewayApp) Reload() error {
 	// 1. 触发底层 WebServer 的重载 (会重新加载本地 yaml 配置文件中的固定路由策略，并触发 OnReload 钩子)
-	err := g.WebServer.Reload()
+	err := service.DefaultServer.Reload()
 
 	// 2. 重新全量拉取 Redis 中的动态配置
 	logger := log.DefaultLogger
@@ -92,11 +91,11 @@ func (g *GatewayApp) Reload() error {
 
 // Status 返回网关运行状态
 func (g *GatewayApp) Status() (string, error) {
-	addr, err := g.WebServer.Status()
+	addr, err := service.DefaultServer.Status()
 	if err != nil {
 		return "", err
 	}
-	
+
 	hostCount := 0
 	if g.rd != nil {
 		hostCount = len(g.rd.Do("KEYS", GatewayConf.Prefix+":host:*").Strings())
