@@ -5,3 +5,4 @@ env.json
 env.yml
 env.yaml
 .log.meta.json
+/gateway
