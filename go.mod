@@ -6,7 +6,7 @@ require (
 	apigo.cc/go/cast v1.5.3
 	apigo.cc/go/config v1.5.3
 	apigo.cc/go/log v1.5.8
-	apigo.cc/go/redis v1.5.6
+	apigo.cc/go/redis v1.5.7
 	apigo.cc/go/service v1.5.15
 	apigo.cc/go/starter v1.5.5
 )
@@ -22,7 +22,7 @@ require (
 	apigo.cc/go/id v1.5.4 // indirect
 	apigo.cc/go/rand v1.5.3 // indirect
 	apigo.cc/go/safe v1.5.2 // indirect
-	apigo.cc/go/shell v1.5.3 // indirect
+	apigo.cc/go/shell v1.5.4 // indirect
 	apigo.cc/go/timer v1.5.0 // indirect
 	apigo.cc/go/watch v1.5.2 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
