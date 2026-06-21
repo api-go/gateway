@@ -15,6 +15,7 @@ import (
 )
 
 func TestGateway(t *testing.T) {
+	t.Setenv("SERVICE_IP", "127.0.0.1")
 	// 1. 设置服务发现和 Redis 依赖
 	registry := "127.0.0.1:6379"
 	rd := redis.GetRedis(registry, log.DefaultLogger)
@@ -134,7 +135,7 @@ func TestGateway(t *testing.T) {
 		res.Body.Close()
 		body = string(b)
 	}
-	if err != nil || body != "hello from backend, path: /hello" {
+	if err != nil || body != "hello from backend, path: /hello?a=1" {
 		t.Fatalf("Proxy /api/ failed, got: %s", body)
 	}
 
@@ -150,7 +151,7 @@ func TestGateway(t *testing.T) {
 		res.Body.Close()
 		body = string(b)
 	}
-	if err != nil || body != "hello from backend, path: /hello/world" {
+	if err != nil || body != "hello from backend, path: /hello/world?x=2" {
 		t.Fatalf("Proxy /v2/* failed, got: %s", body)
 	}
 
