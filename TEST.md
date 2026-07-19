@@ -1,5 +1,9 @@
 # Gateway Test Report
 
+## v1.5.6 验证
+- `go list -m all`：模块图使用 `service v1.5.22`、`discover v1.5.8`、`redis v1.5.11` 与稳定版 `redigo v1.9.3`。
+- `go test -v ./...` 与 `go test -bench=. ./...` 全部通过。
+
 ## v1.5.5 验证
 - `go list -m all`：模块图使用 `service v1.5.21`、`discover v1.5.7`、`redis v1.5.11` 与稳定版 `redigo v1.9.3`。
 - `go test -v ./...` 与 `go test -bench=. ./...` 全部通过。
@@ -22,6 +26,7 @@
 
 ## 性能指标 (Benchmark & Efficiency)
 
+- `BenchmarkNewGatewayApp-16`: `17.20 ns/op`，`32 B/op`，`1 allocs/op`（Apple M3 Max）。
 - **0 Write Lock Jitter**: 核心链路不再像旧版 `ssgo/gateway` 一样在匹配时被写锁拖累。配置下发生效使用纳秒级 Copy-on-Write 指针覆盖。
 - **Pub/Sub Target Update**: 热更仅针对修改的单个 Host 拉取单条 HGET，消除了轮询和全量遍历的 O(N) 性能损耗。
 - 全链路端到端集成测试完成于 **~0.92s**。

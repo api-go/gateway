@@ -3,26 +3,26 @@ module apigo.cc/go/gateway
 go 1.25.0
 
 require (
-	apigo.cc/go/cast v1.5.4
-	apigo.cc/go/config v1.5.3
-	apigo.cc/go/log v1.5.8
+	apigo.cc/go/cast v1.5.5
+	apigo.cc/go/config v1.5.4
+	apigo.cc/go/log v1.5.9
 	apigo.cc/go/redis v1.5.11
-	apigo.cc/go/service v1.5.21
+	apigo.cc/go/service v1.5.22
 	apigo.cc/go/starter v1.5.6
 )
 
 require apigo.cc/go/jsmod v1.5.3 // indirect
 
 require (
-	apigo.cc/go/crypto v1.5.4 // indirect
-	apigo.cc/go/discover v1.5.7 // indirect
-	apigo.cc/go/encoding v1.5.5 // indirect
-	apigo.cc/go/file v1.5.5 // indirect
-	apigo.cc/go/http v1.5.3 // indirect
-	apigo.cc/go/id v1.5.6 // indirect
-	apigo.cc/go/rand v1.5.3 // indirect
-	apigo.cc/go/safe v1.5.2 // indirect
-	apigo.cc/go/shell v1.5.4 // indirect
+	apigo.cc/go/crypto v1.5.5 // indirect
+	apigo.cc/go/discover v1.5.8 // indirect
+	apigo.cc/go/encoding v1.5.6 // indirect
+	apigo.cc/go/file v1.5.6 // indirect
+	apigo.cc/go/http v1.5.4 // indirect
+	apigo.cc/go/id v1.5.7 // indirect
+	apigo.cc/go/rand v1.5.4 // indirect
+	apigo.cc/go/safe v1.5.3 // indirect
+	apigo.cc/go/shell v1.5.5 // indirect
 	apigo.cc/go/timer v1.5.0 // indirect
 	apigo.cc/go/watch v1.5.2 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect

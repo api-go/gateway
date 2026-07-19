@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.5.6 (2026-07-19)
+- **依赖链升级**: 升级 `service` 至 `v1.5.22`、`discover` 至 `v1.5.8`，对齐 Redis 类型化服务发现流程。
+- **依赖对齐**: 随模块图同步升级 `cast`、`config`、`crypto`、`encoding`、`file`、`http`、`id`、`log`、`rand`、`safe`、`shell` 的 patch 版本。
+- **文档与测试**: 记录当前兼容基线，新增 `GatewayApp` 构造 Benchmark。
+
 ## v1.5.5 (2026-07-18)
 - **依赖校验修复**: 升级 `service` 至 `v1.5.21`、`discover` 至 `v1.5.7`、`redis` 至 `v1.5.11`，使用稳定版 `redigo v1.9.3`。
 - **依赖对齐**: 升级 `cast` 至 `v1.5.4`、`crypto` 至 `v1.5.4`、`encoding` 至 `v1.5.5`、`id` 至 `v1.5.6`、`starter` 至 `v1.5.6`。

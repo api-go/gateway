@@ -228,3 +228,12 @@ func TestGateway(t *testing.T) {
 		t.Fatalf("Atomic update failed, old route still exists")
 	}
 }
+
+var benchmarkGatewayApp *GatewayApp
+
+func BenchmarkNewGatewayApp(b *testing.B) {
+	b.ReportAllocs()
+	for b.Loop() {
+		benchmarkGatewayApp = NewGatewayApp()
+	}
+}

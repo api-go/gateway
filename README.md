@@ -2,6 +2,8 @@
 
 基于 `@go/service` 实现的微服务 API 网关。详细路由语法与高级配置参考：[https://apigo.cc/go/service](https://apigo.cc/go/service)
 
+版本基线：`gateway v1.5.6` 对齐 `service v1.5.22` 与 `discover v1.5.8`，公开 API 和配置格式保持兼容。
+
 ---
 
 ## 🚀 1. 快速开始 (1分钟)
