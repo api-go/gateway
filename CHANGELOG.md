@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.5.8 (2026-09-05)
+- **依赖对齐**: 补齐 `service`、`discover`、`http`、`redis`、`starter` 与 `watch` 的级联版本。
+
 ## v1.5.7 (2026-09-05)
 - **依赖对齐**: 升级全部 `apigo.cc/go/*` 依赖至当前已发布版本。
 
