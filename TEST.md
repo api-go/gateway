@@ -1,6 +1,6 @@
 # Gateway Test Report
 
-## v1.5.6 验证
+## v1.5.7 验证
 - `go list -m all`：模块图使用 `service v1.5.22`、`discover v1.5.8`、`redis v1.5.11` 与稳定版 `redigo v1.9.3`。
 - `go test -v ./...` 与 `go test -bench=. ./...` 全部通过。
 

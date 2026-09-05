@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.5.7 (2026-09-05)
+- **依赖对齐**: 升级全部 `apigo.cc/go/*` 依赖至当前已发布版本。
+
 ## v1.5.6 (2026-07-19)
 - **依赖链升级**: 升级 `service` 至 `v1.5.22`、`discover` 至 `v1.5.8`，对齐 Redis 类型化服务发现流程。
 - **依赖对齐**: 随模块图同步升级 `cast`、`config`、`crypto`、`encoding`、`file`、`http`、`id`、`log`、`rand`、`safe`、`shell` 的 patch 版本。
