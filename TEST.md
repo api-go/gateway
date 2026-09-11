@@ -1,5 +1,9 @@
 # Gateway Test Report
 
+## v1.5.10 验证
+- Redis 网关集成场景通过 `GATEWAY_REDIS_INTEGRATION=1` 显式启用。
+- `go test -v ./...` 与 `go test -bench=. ./...` 通过。
+
 ## v1.5.8 验证
 - `go list -m all`：模块图使用 `service v1.5.22`、`discover v1.5.8`、`redis v1.5.11` 与稳定版 `redigo v1.9.3`。
 - `go test -v ./...` 与 `go test -bench=. ./...` 全部通过。

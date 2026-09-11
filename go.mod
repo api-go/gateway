@@ -5,26 +5,26 @@ go 1.25.0
 require (
 	apigo.cc/go/cast v1.5.7
 	apigo.cc/go/config v1.5.7
-	apigo.cc/go/log v1.5.14
+	apigo.cc/go/log v1.5.15
 	apigo.cc/go/redis v1.5.17
-	apigo.cc/go/service v1.5.37
-	apigo.cc/go/starter v1.5.9
+	apigo.cc/go/service v1.5.40
+	apigo.cc/go/starter v1.5.10
 )
 
-require apigo.cc/go/jsmod v1.5.4 // indirect
+require apigo.cc/go/jsmod v1.5.5 // indirect
 
 require (
-	apigo.cc/go/crypto v1.5.7 // indirect
-	apigo.cc/go/discover v1.5.13 // indirect
+	apigo.cc/go/crypto v1.5.8 // indirect
+	apigo.cc/go/discover v1.5.14 // indirect
 	apigo.cc/go/encoding v1.5.8 // indirect
 	apigo.cc/go/file v1.5.9 // indirect
-	apigo.cc/go/http v1.5.8 // indirect
+	apigo.cc/go/http v1.5.9 // indirect
 	apigo.cc/go/id v1.5.9 // indirect
 	apigo.cc/go/rand v1.5.4 // indirect
 	apigo.cc/go/safe v1.5.4 // indirect
-	apigo.cc/go/shell v1.5.7 // indirect
+	apigo.cc/go/shell v1.5.8 // indirect
 	apigo.cc/go/timer v1.5.0 // indirect
-	apigo.cc/go/watch v1.5.9 // indirect
+	apigo.cc/go/watch v1.5.10 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gomodule/redigo v1.9.3 // indirect

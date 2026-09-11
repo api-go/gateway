@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.5.10 (2026-09-12)
+- **测试隔离**: Redis 网关集成测试改为通过 `GATEWAY_REDIS_INTEGRATION=1` 显式启用。
+
 ## v1.5.8 (2026-09-05)
 - **依赖对齐**: 补齐 `service`、`discover`、`http`、`redis`、`starter` 与 `watch` 的级联版本。
 

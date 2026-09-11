@@ -15,6 +15,9 @@ import (
 )
 
 func TestGateway(t *testing.T) {
+	if os.Getenv("GATEWAY_REDIS_INTEGRATION") != "1" {
+		t.Skip("set GATEWAY_REDIS_INTEGRATION=1 to run the Redis-backed gateway integration test")
+	}
 	t.Setenv("SERVICE_IP", "127.0.0.1")
 	// 1. 设置服务发现和 Redis 依赖
 	registry := "127.0.0.1:6379"
