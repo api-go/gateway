@@ -1,36 +1,42 @@
-# Gateway Test Report
+# Gateway 验证报告
 
-## v1.5.10 验证
-- Redis 网关集成场景通过 `GATEWAY_REDIS_INTEGRATION=1` 显式启用。
-- `go test -v ./...` 与 `go test -bench=. ./...` 通过。
+## v1.5.11 发布验证（2026-10-06）
 
-## v1.5.8 验证
-- `go list -m all`：模块图使用 `service v1.5.22`、`discover v1.5.8`、`redis v1.5.11` 与稳定版 `redigo v1.9.3`。
-- `go test -v ./...` 与 `go test -bench=. ./...` 全部通过。
+运行 `go test -v ./...`、`go test -bench=. ./...`、`go test -race ./...` 与 `GOWORK=off go test ./...`。Redis 集成通过 `GATEWAY_REDIS_INTEGRATION=1` 显式启用。
 
-## v1.5.5 验证
-- `go list -m all`：模块图使用 `service v1.5.21`、`discover v1.5.7`、`redis v1.5.11` 与稳定版 `redigo v1.9.3`。
-- `go test -v ./...` 与 `go test -bench=. ./...` 全部通过。
+覆盖：
 
-## 覆盖场景 (White Box & Black Box)
+- 草稿不影响流量，发布/回滚/重启恢复，非法规则保持原路由，域名冲突、过期 revision、读对象隔离。
+- Host/Path/IP/UA/Header/Session/Cookie 联合计数，缺失维度处理、周期过期、观察模式、高基数容量；100 个并发请求严格限制允许次数。
+- 实际代理正常传输 Body；超限在读取请求体、访问上游之前拒绝。原 Service 代理/重写/静态/Redis 通知兼容。
+- Redis CAS、多节点配置与删除收敛、共享额度、节点心跳；主状态丢失后持续转发、缓存重启与拒绝失去权威状态的写入。
+- 自建临时 Redis 真实停止/重启：无集群额度的路由继续服务、集群额度返回 503、缓存可重启、管理写入及登录拒绝，恢复后配置写入与跨节点额度恢复；不会停止用户 Redis。通过 GATEWAY_REDIS_PROCESS_INTEGRATION=1 启用，需要 redis-server。
+- 单密码登录、未初始化锁定、CSRF、来源检查、登录限速、单机及集群密码修改撤销会话、移除账号 API；私有地址选择、配置生成与不覆盖已有文件。
+- 独立证书库的精确/单层通配匹配、同 Host 多域名真实 SNI 握手、证书即时添加/删除/过期的 HTTPS 与 HTTP 回退、10443 端口跳转、证书库共享密钥要求与跨节点上传/删除收敛、读对象隔离、CSRF、revision 冲突、签发设置重启恢复。
+- 上传证书私钥加密和 API 脱敏、加密缓存往返、管理器关闭与后台缓存写入的并发安全、上传证书与已缓存自动证书的真实 TLS 握手。
+- 本地 ACME 目录服务驱动官方 autocert 完整 HTTP-01 申请，验证请求实际进入 Gateway，签发证书用于真实 TLS 握手及加密缓存。测试 CA 不验证 JWS 签名，不能代替公网 CA 的部署验证；自动续期由 autocert 提供，未等待真实续期周期。
+- Chrome/Playwright 可重复验收脚本覆盖密码初始化前锁定、登录、Host 新建、四类路由及实际请求、七维联合限流、观察模式、预览、发布、历史回滚、证书库上传、编辑、删除与即时匹配、页面保存签发设置、自适应 HTTPS 跳转及关闭跳转、独立路由标签页与固定高度弹窗、导入导出、事件、节点、设置、错误配置、并发冲突、停用/启用、删除、改密撤销会话、移动布局及退出；测试夹具位于 testdata/browser。
 
-1. **直接代理匹配 (Discover) / `TestGateway`**: 
-   - 验证 `ReplaceProxies` 将 `{"Path": "/direct", "ToApp": "test-backend", "ToPath": "/hello"}` 正确生效。
-   - 验证网关能通过 `@go/discover` 成功将流量转发到注册的 `test-backend` 节点。
-2. **正则代理匹配 (Discover)**:
-   - 验证配置 `{"Path": "^/api/(.*)$", "ToApp": "test-backend", "ToPath": "/$1"}` 能够正确捕获正则表达式组（如 `hello?a=1`）并完整转发。
-3. **Rewrite 后再 Proxy**:
-   - 验证重写引擎先将 `/old-api/hello` 转化成 `/api/hello`，随后被 Proxy 引擎接管并正确路由到底层应用。
-4. **静态文件服务**:
-   - 验证 `ReplaceStatics` 配置能够正确暴露文件系统目录给指定的 Host 处理，响应 `200 OK` 且内容完整。
-5. **基于 Redis Pub/Sub 的局部动态热更新 (0 毛刺原子替换)**:
-   - 发送 `EventMessage{Action: "update", Type: "proxy", Host: "gw.test"}` 到 Redis 频道。
-   - 验证新下发的 `/new-direct` 路由立刻生效并被成功访问。
-   - 验证旧路由 `/direct` 被自动清理淘汰（因为全量替换了 `gw.test` 的配置数组），正确返回 `404 Not Found`。
+Apple M3 Max 示例 benchmark（包含测试请求/响应对象构造，不等同于网络吞吐）：
 
-## 性能指标 (Benchmark & Efficiency)
+| 场景 | ns/op | B/op | allocs/op |
+| --- | ---: | ---: | ---: |
+| NewGatewayApp | 20.52 | 64 | 1 |
+| LimiterIPWindow（公开帮助 API，含规则编译） | 1380 | 1305 | 21 |
+| PublishedHostQuota（实际已编译 Host 请求链） | 4888 | 3584 | 79 |
 
-- `BenchmarkNewGatewayApp-16`: `17.20 ns/op`，`32 B/op`，`1 allocs/op`（Apple M3 Max）。
-- **0 Write Lock Jitter**: 核心链路不再像旧版 `ssgo/gateway` 一样在匹配时被写锁拖累。配置下发生效使用纳秒级 Copy-on-Write 指针覆盖。
-- **Pub/Sub Target Update**: 热更仅针对修改的单个 Host 拉取单条 HGET，消除了轮询和全量遍历的 O(N) 性能损耗。
-- 全链路端到端集成测试完成于 **~0.92s**。
+正常业务请求不执行配置编译/数据库配置读取，但限流计数使用锁或 Redis；不能将旧文档的“完全零锁、零抖动”描述用于当前完整请求链。集群同步采用发布通知加周期校对，不能保证所有节点瞬时切换。
+
+完整 Redis 集成 race 检查通过；发布前以 GOWORK=off、已发布 Service v1.5.42 / Discover v1.5.15、无本地 replace 验证独立模块与浏览器流程。
+
+命令行实际验证覆盖首次生成配置、终端不回显、两次确认和不一致拒绝，标准输入密码路径、启动/状态/停止、运行中改密及旧会话撤销。本轮按用户确认仅做本地验收：公网 ACME staging 不作为待办或发布阻塞项；真实续期周期和跨浏览器兼容性未验收。
+
+## 验收范围
+
+- 浏览器：Chrome / Playwright 的 22 组主流程及异常流程全部通过，无页面脚本错误；包含移动视口，不代表所有移动设备或其他浏览器兼容性已验证。
+- 后端：TLS / ACME、可信代理 IP、多节点 CAS/限流、Redis 故障恢复、并发缓存关闭等通过 Go 测试及 race 验证。这些结果不归为浏览器验收。
+- 文档：Gateway、Service、Discover 的 README / TEST / CHANGELOG 及模块索引已同步；版本及依赖已同步到发布版本，不含本地 replace。
+
+## 历史验证
+
+v1.5.10：Redis 集成测试改为显式启用；基础测试与 benchmark 通过。

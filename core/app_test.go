@@ -1,11 +1,14 @@
-package main
+package gateway_test
 
 import (
+	"apigo.cc/go/cast"
+	"apigo.cc/go/gateway/core"
 	"apigo.cc/go/log"
 	"apigo.cc/go/redis"
 	"apigo.cc/go/service"
+	"apigo.cc/go/timer"
 	"context"
-	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	gohttp "net/http"
@@ -45,14 +48,20 @@ func TestGateway(t *testing.T) {
 
 	backendCtx, backendCancel := context.WithCancel(context.Background())
 	defer backendCancel()
-	go backend.Start(backendCtx, log.DefaultLogger)
+	backendStarted := make(chan error, 1)
+	go func() { backendStarted <- backend.Start(backendCtx, log.DefaultLogger) }()
 	defer backend.Stop(backendCtx)
 
-	time.Sleep(500 * time.Millisecond) // 等待后端启动和注册
+	if err := <-backendStarted; err != nil {
+		t.Fatal(err)
+	}
 
 	// 3. 配置 Gateway (使用全局 service)
-	GatewayConf.Redis = registry
-	GatewayConf.Prefix = "gateway"
+	gateway.GatewayConf.DataDir = t.TempDir()
+	gateway.GatewayConf.AdminDisabled = true
+	service.DefaultServer.Config.AutoCertDir = t.TempDir()
+	gateway.GatewayConf.Redis = registry
+	gateway.GatewayConf.Prefix = "gateway"
 
 	// 初始化网关的配置到 Redis
 	proxyRules := []service.ProxyRule{
@@ -64,8 +73,8 @@ func TestGateway(t *testing.T) {
 		{Path: "^/old-api/(.*)$", ToPath: "/api/$1"},
 	}
 
-	proxyJson, _ := json.Marshal(proxyRules)
-	rewriteJson, _ := json.Marshal(rewriteRules)
+	proxyJson, _ := cast.ToJSONBytes(proxyRules)
+	rewriteJson, _ := cast.ToJSONBytes(rewriteRules)
 
 	rd.Do("HSET", "gateway:host:gw.test", "proxies", string(proxyJson))
 	rd.Do("HSET", "gateway:host:gw.test", "rewrites", string(rewriteJson))
@@ -78,11 +87,11 @@ func TestGateway(t *testing.T) {
 	staticConfig := map[string]string{
 		"/ui": tmpDir,
 	}
-	staticJson, _ := json.Marshal(staticConfig)
+	staticJson, _ := cast.ToJSONBytes(staticConfig)
 	rd.Do("HSET", "gateway:host:gw.test", "statics", string(staticJson))
 
 	// 4. 启动 Gateway 应用
-	app := NewGatewayApp()
+	app := gateway.NewGatewayApp()
 
 	// 设置独立的端口给 Gateway 的 WebServer
 	service.Config.App = "gateway"
@@ -97,10 +106,13 @@ func TestGateway(t *testing.T) {
 
 	// 这里假设 GatewayApp.Start 内部会调用 service.Start()，
 	// 而 service.Start() 在新版本中如果是阻塞的，我们需要在 goroutine 中运行
-	go app.Start(ctx, log.DefaultLogger)
+	gatewayStarted := make(chan error, 1)
+	go func() { gatewayStarted <- app.Start(ctx, log.DefaultLogger) }()
 	defer app.Stop(ctx)
 
-	time.Sleep(500 * time.Millisecond)
+	if err := <-gatewayStarted; err != nil {
+		t.Fatal(err)
+	}
 
 	gwAddr := service.DefaultServer.Addr
 	if gwAddr == "" {
@@ -197,14 +209,26 @@ func TestGateway(t *testing.T) {
 	newProxyRules := []service.ProxyRule{
 		{Path: "/new-direct", ToApp: "test-backend", ToPath: "/hello"},
 	}
-	newProxyJson, _ := json.Marshal(newProxyRules)
+	newProxyJson, _ := cast.ToJSONBytes(newProxyRules)
 	rd.Do("HSET", "gateway:host:gw.test", "proxies", string(newProxyJson))
 
 	// 发布更新消息
 	rd.Do("PUBLISH", "gateway:channel", `"gw.test"`)
 
 	// 等待接收和更新
-	time.Sleep(300 * time.Millisecond)
+	_ = timer.Retry(func() error {
+		test, _ := gohttp.NewRequest("GET", "http://127.0.0.1:"+gwPort+"/new-direct", nil)
+		test.Host = "gw.test"
+		result, err := client.Do(test)
+		if err != nil {
+			return err
+		}
+		result.Body.Close()
+		if result.StatusCode != 200 {
+			return fmt.Errorf("update pending")
+		}
+		return nil
+	}, timer.WithMaxRetries(50), timer.WithBackoff(20*time.Millisecond, 1))
 
 	// 测试新路由应该生效
 	req, _ = gohttp.NewRequest("GET", "http://127.0.0.1:"+gwPort+"/new-direct", nil)
@@ -232,11 +256,11 @@ func TestGateway(t *testing.T) {
 	}
 }
 
-var benchmarkGatewayApp *GatewayApp
+var benchmarkGatewayApp *gateway.GatewayApp
 
 func BenchmarkNewGatewayApp(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
-		benchmarkGatewayApp = NewGatewayApp()
+		benchmarkGatewayApp = gateway.NewGatewayApp()
 	}
 }
