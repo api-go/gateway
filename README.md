@@ -63,6 +63,8 @@ gateway:
 
 | 类型 | 匹配路径 | 目标 | 效果 |
 | --- | --- | --- | --- |
+| 整站应用代理 | `/*` | `llm` | `/v1/models` 转发到 llm 的 `/v1/models` |
+| 整站 HTTP 代理（省略目标路径） | `/*` | `https://upstream.example.com` | `/news` 转发到上游 `/news` |
 | 整站代理 | `/*` | `https://upstream.example.com/` | `/news` 转发到上游 `/news` |
 | 子目录去前缀代理 | `/api/*` | `http://127.0.0.1:8080/` | `/api/users` 转发到上游 `/users` |
 | 子目录保留前缀代理 | `/api/*` | `user-svc/api/` | `/api/users` 转发到发现服务 `/api/users` |
@@ -71,6 +73,8 @@ gateway:
 | 首页重写 | `/` | `/index.html` | 只重写首页 |
 | 整站迁移 | `/*` | `https://new.example.com/` | HTTP 302 跳转，保留路径 |
 | 子目录重定向 | `/old/*` | `https://new.example.com/` | `/old/a` 跳转到新站 `/a` |
+
+代理目标可以只写应用名 `llm`（需要已启用的服务发现及可用节点）；直连 HTTP 服务必须以 `http://` 或 `https://` 开头，不自动补协议。省略目标路径时默认 `/`，所以 `llm` 与 `llm/`、`https://upstream.example.com` 与 `https://upstream.example.com/` 等价。是否整站匹配由来源 `path: "/*"` 决定；省略目标路径不会让来源 `/` 变成整站规则。后台新增代理默认匹配 `/*`、认证级别 `0`，目标实际留空，输入框仅提示 `llm 或 https://upstream.example.com`。
 
 末尾 `/*` 为前缀匹配，将后缀追加到目标；目标目录建议以 `/` 或 `/*` 结尾。`/api/*` 匹配 `/api/` 及其下路径，不匹配 `/api`；需要时另加 `/api` 精确规则。普通规则保留查询参数；重写/重定向目标自带 `?` 时替换原查询参数。子目录代理只处理请求路径，不会自动改写上游 HTML 中的绝对资源地址、Cookie Path 或 Location，上游应支持对应的公开访问前缀。
 

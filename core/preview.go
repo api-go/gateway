@@ -139,6 +139,14 @@ func (m *Manager) Preview(input PreviewInput) (PreviewResult, error) {
 		if target == "" {
 			target = rule.ToApp + rule.ToPath
 		}
+		// Service defaults a proxy target without a path to the root directory.
+		address := target
+		if _, rest, hasScheme := strings.Cut(target, "://"); hasScheme {
+			address = rest
+		}
+		if rule.To != "" && !strings.ContainsRune(address, '/') {
+			target += "/"
+		}
 		if resolved, ok := matchRule(rule.Path, target, path); ok {
 			result.Type = "proxy"
 			if query != "" {

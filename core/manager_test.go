@@ -25,6 +25,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -704,5 +705,23 @@ func TestCertificateCacheCloseDuringBackgroundWrites(t *testing.T) {
 	m.Close()
 	if err := cache.Put(context.Background(), "after-close", []byte("test")); err == nil {
 		t.Fatal("closed manager accepted encrypted cache writes")
+	}
+}
+
+func TestPreviewProxyTargetWithoutPath(t *testing.T) {
+	m, _, _ := manager(t)
+	for _, target := range []string{"llm", "llm/", "http://127.0.0.1:8080", "https://upstream.example.com"} {
+		t.Run(target, func(t *testing.T) {
+			host := baseHost()
+			host.Proxies = []service.ProxyRule{{Path: "/*", To: target}}
+			result, err := m.Preview(gateway.PreviewInput{Host: host, Domain: "example.test", Path: "/v1/models?x=1"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			expected := strings.TrimSuffix(target, "/") + "/v1/models?x=1"
+			if result.Type != "proxy" || result.Target != expected {
+				t.Fatalf("preview %+v, want %s", result, expected)
+			}
+		})
 	}
 }
