@@ -3,12 +3,13 @@
 ## v1.5.12 未发布后台路由配置验证（2026-10-10）
 
 - `GOWORK=off go test -v ./...` 和 `GOWORK=off go test -bench=. ./...` 通过。
-- JS 语法检查、Node VM 四类标签页说明渲染及正则反斜杠输出检查通过；本次未运行完整浏览器验收。
+- JS 语法检查、Node VM 四类标签页说明渲染及正则反斜杠输出检查通过；后续本轮编辑交互改动已完成 Chrome/Playwright 全流程验收，22 项全部通过且无页面脚本异常。
 - 对照已发布 Service v1.5.42 确认路径匹配、查询参数与静态目录解析。
+- Chrome/Playwright 验证发布成功关闭编辑窗口及版本提示、域名自动名称、新规则无鉴权输入且 AuthLevel=0；Node VM 验证既有非零鉴权保留并显示兼容提示。
 - TestPreviewProxyTargetWithoutPath 覆盖 llm、llm/、无路径 HTTP/HTTPS 地址的整站目标预览及查询参数保留；代理应用名、协议要求与空目标说明的 Node VM 渲染检查通过。
 - 依赖审计与 `go mod tidy` 后复测通过：Cast v1.5.8、Log v1.5.17、Redis v1.5.19、Starter v1.5.12、Task v1.5.13；未使用本地 replace。Redis 外部集成未启用，相应测试按设计跳过。
 - `ai/tools/getExports` 在本工作区不可用，使用 `GOWORK=off go doc -all apigo.cc/go/gateway/core` 与导出源码交叉核对 README 的 API 表；本次未新增 Go API。
-- Apple M3 Max Benchmark：NewGatewayApp 18.55 ns/op、64 B/op、1 alloc/op；LimiterIPWindow 1363 ns/op、1305 B/op、21 allocs/op；PublishedHostQuota 4616 ns/op、3584 B/op、79 allocs/op。
+- Apple M3 Max Benchmark：NewGatewayApp 20.44 ns/op、64 B/op、1 alloc/op；LimiterIPWindow 1410 ns/op、1305 B/op、21 allocs/op；PublishedHostQuota 4907 ns/op、3584 B/op、79 allocs/op。
 
 ## v1.5.11 发布验证（2026-10-06）
 
