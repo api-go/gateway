@@ -758,6 +758,6 @@ func (m *Manager) SetCertificate(id string, expected int64, certificate string, 
 }
 func (m *Manager) Settings() map[string]any {
 	settings, _ := m.ACMESettings()
-	return map[string]any{"nodeID": m.config.NodeID, "clientIP": m.config.ClientIP, "cluster": m.rd != nil, "adminListen": m.config.AdminListen, "adminDisabled": m.config.AdminDisabled, "acmeEmail": settings.Email, "acmeAcceptTerms": settings.AcceptTerms, "acmeDirectory": settings.Directory, "rateAlgorithm": "first-request fixed window", "listen": m.server.Config.Listen}
+	return map[string]any{"nodeID": m.config.NodeID, "clientIP": m.config.ClientIP, "cluster": m.rd != nil, "sharedCertificateKey": m.sharedKey, "adminListen": m.config.AdminListen, "adminDisabled": m.config.AdminDisabled, "acmeEmail": settings.Email, "acmeAcceptTerms": settings.AcceptTerms, "acmeDirectory": settings.Directory, "rateAlgorithm": "first-request fixed window", "listen": m.server.Config.Listen}
 }
 func (m *Manager) Handler() http.Handler { return m.server.Handler() }
