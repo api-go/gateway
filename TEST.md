@@ -1,5 +1,14 @@
 # Gateway 验证报告
 
+## v1.5.12 未发布后台路由配置验证（2026-10-10）
+
+- `GOWORK=off go test -v ./...` 和 `GOWORK=off go test -bench=. ./...` 通过。
+- JS 语法检查、Node VM 四类标签页说明渲染及正则反斜杠输出检查通过；本次未运行完整浏览器验收。
+- 对照已发布 Service v1.5.42 确认路径匹配、查询参数与静态目录解析。
+- 依赖审计与 `go mod tidy` 后复测通过：Cast v1.5.8、Log v1.5.17、Redis v1.5.19、Starter v1.5.12、Task v1.5.13；未使用本地 replace。Redis 外部集成未启用，相应测试按设计跳过。
+- `ai/tools/getExports` 在本工作区不可用，使用 `GOWORK=off go doc -all apigo.cc/go/gateway/core` 与导出源码交叉核对 README 的 API 表；本次未新增 Go API。
+- Apple M3 Max Benchmark：NewGatewayApp 20.09 ns/op、64 B/op、1 alloc/op；LimiterIPWindow 1420 ns/op、1305 B/op、21 allocs/op；PublishedHostQuota 5178 ns/op、3584 B/op、79 allocs/op。
+
 ## v1.5.11 发布验证（2026-10-06）
 
 运行 `go test -v ./...`、`go test -bench=. ./...`、`go test -race ./...` 与 `GOWORK=off go test ./...`。Redis 集成通过 `GATEWAY_REDIS_INTEGRATION=1` 显式启用。
