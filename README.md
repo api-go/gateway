@@ -118,7 +118,7 @@ Service 的默认 legacy 模式保留内部兼容逻辑；其中请求 ID 是约
 
 ## HTTPS 证书
 
-证书库验证 PEM 证书/私钥匹配并从 SAN 提取域名。私钥使用 AES-GCM 加密落盘，管理 API 不返回私钥、密文或 PEM；证书信息展示来源、覆盖域名、状态和有效期。可先上传证书，也可先发布 Host；两者自动衔接。
+证书名称只是列表和操作记录中的备注，可以填写“生产泛域名证书”，无需是域名；它不参与域名匹配。上传模式无需填写域名，证书库验证 PEM 证书/私钥匹配并从 SAN 提取域名（不以文件名或证书名称推断）；没有 SAN 的证书不支持。证书文件建议包含完整中间证书链，私钥支持 `.key`、`.pem`，扩展名不影响解析，内容须为未加密 PEM 私钥并与证书匹配。私钥使用 AES-GCM 加密落盘，管理 API 不返回私钥、密文或 PEM；证书信息展示来源、覆盖域名、状态和有效期。可先上传证书，也可先发布 Host；两者自动衔接。
 
 新 Host 默认 HTTPS.Mode=adaptive，HTTPS.Redirect=auto（off 关闭跳转）。按 SNI / 请求域名精确匹配有效证书；精确匹配失败才尝试单层通配符，例如 *.example.com 覆盖 api.example.com，不覆盖 example.com 或 a.api.example.com。相同匹配级别先选到期更晚的证书，时间相同按 ID 确定顺序。未生效或过期证书不用于 TLS / 跳转。HTTP 回退只保证后续 HTTP 请求可以服务，不能把失败的 HTTPS 握手变成 HTTP，也不会撤销浏览器已缓存的 HSTS。
 
@@ -132,7 +132,7 @@ HTTP-01 要求域名解析到本网关且**公网 80 端口**能转发到 HTTP �
 
 旧 Host HTTPS.Mode=upload/auto 及 SetCertificate API 保留兼容，但新建 Host 统一推荐 adaptive 和集中证书库。
 
-上传证书支持集群，但各节点必须配置同一个 32 字节十六进制 `GATEWAY_CERTIFICATE_KEY`。自动缓存与上传私钥均加密；单节点未配置共享密钥时生成本地 `certificate.key`。
+上传证书支持集群，但各节点必须配置同一个 **64 个十六进制字符（32 字节）** 的 `GATEWAY_CERTIFICATE_KEY`。只要 Gateway 配置了 Redis，即使实际只有一个节点也执行此要求；缺少时保存报 `cluster certificates require GATEWAY_CERTIFICATE_KEY`。此密钥用于加密持久化私钥，不是上传的 TLS `.key` 文件。应通过进程环境或服务管理器安全配置并重启所有节点；也支持 Gateway 的 `CertificateKey` 配置字段，环境变量优先。后台显示密钥是否已配置，不返回密钥值。可用 `openssl rand -hex 32` 生成一次并安全分发，不能每次启动重新生成或为不同节点分别生成；已有加密证书时应复用原密钥，任意更换会导致旧数据无法解密。自动缓存与上传私钥均加密；单节点未配置共享密钥时生成本地 `certificate.key`。
 
 ## 持久化与集群
 
@@ -184,3 +184,7 @@ GATEWAY_REDIS_PROCESS_INTEGRATION=1 go test -race -run TestRedisOutage ./core
 | SetAdminPassword(config, safeBuf) | 独立设置单管理员密码；不修改 Host 状态，调用者负责关闭 SafeBuf |
 | DefaultAdminListen / WriteDefaultAdminConfig | 选择私有地址的 81 端口；创建默认配置且不覆盖已有目标文件 |
 | NewLimiter、Limiter.Evaluate / Sweep | 单独使用限流；Evaluate 包含编译成本，实际发布 Host 的热路径使用预编译规则 |
+
+## v1.5.12 依赖基线
+
+本版本对齐 Log v1.5.17 与发布时模块索引中的上游已发布依赖；公开 API 保持兼容。

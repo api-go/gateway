@@ -51,3 +51,15 @@ Apple M3 Max 示例 benchmark（包含测试请求/响应对象构造，不等�
 ## 历史验证
 
 v1.5.10：Redis 集成测试改为显式启用；基础测试与 benchmark 通过。
+
+## v1.5.12 发布验证（2026-10-10）
+
+- GOWORK=off go test -v ./... 与 go test -bench=. ./... 通过，依赖均为已发布 tag。
+- API 以 GOWORK=off go doc 与导出源码交叉核对（getExports 工具不可用）。
+- GOWORK=off go test -race ./... 通过。
+
+```text
+BenchmarkNewGatewayApp-16         	61678689	        20.05 ns/op	      64 B/op	       1 allocs/op
+BenchmarkLimiterIPWindow-16       	  874876	      1410 ns/op	    1305 B/op	      21 allocs/op
+BenchmarkPublishedHostQuota-16    	  232284	      5161 ns/op	    3633 B/op	      82 allocs/op
+```

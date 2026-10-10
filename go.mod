@@ -6,16 +6,16 @@ require (
 	apigo.cc/go/cast v1.5.8
 	apigo.cc/go/config v1.5.8
 	apigo.cc/go/crypto v1.5.8
-	apigo.cc/go/discover v1.5.15
+	apigo.cc/go/discover v1.5.16
 	apigo.cc/go/encoding v1.5.8
 	apigo.cc/go/file v1.5.9
 	apigo.cc/go/log v1.5.17
-	apigo.cc/go/redis v1.5.19
+	apigo.cc/go/redis v1.5.20
 	apigo.cc/go/safe v1.5.4
-	apigo.cc/go/service v1.5.42
+	apigo.cc/go/service v1.5.43
 	apigo.cc/go/shell v1.5.8
-	apigo.cc/go/starter v1.5.12
-	apigo.cc/go/task v1.5.13
+	apigo.cc/go/starter v1.5.13
+	apigo.cc/go/task v1.5.14
 	apigo.cc/go/timer v1.5.0
 	github.com/gomodule/redigo v1.9.3
 	golang.org/x/crypto v0.52.0
@@ -23,7 +23,7 @@ require (
 )
 
 require (
-	apigo.cc/go/http v1.5.10 // indirect
+	apigo.cc/go/http v1.5.11 // indirect
 	apigo.cc/go/id v1.5.9 // indirect
 	apigo.cc/go/jsmod v1.5.5 // indirect
 	apigo.cc/go/rand v1.5.4 // indirect
