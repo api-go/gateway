@@ -109,20 +109,14 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 		}
 		rawKey = decoded
 	} else {
-		keyFile := filepath.Join(config.DataDir, "certificate.key")
-		if file.Exists(keyFile) {
-			var err error
-			rawKey, err = file.ReadBytes(keyFile)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			rawKey = safe.MakeSafeToken(32)
-			if err := privateWrite(keyFile, rawKey); err != nil {
-				return nil, err
-			}
+		var err error
+		rawKey, err = m.automaticCertificateKey()
+		if err != nil {
+			return nil, err
 		}
 	}
+	m.sharedKey = m.rd != nil || keyValue != ""
+
 	if len(rawKey) != 32 {
 		return nil, fmt.Errorf("invalid persisted certificate key")
 	}
@@ -157,6 +151,18 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 			return true
 		}
 		service.RelayClientIP(request)
+		// The HTTP client supports an explicit Host header; retain the public host
+		// when the discovery target is an internal node address.
+		scheme := "http"
+		if request.TLS != nil {
+			scheme = "https"
+		}
+		request.Request.Header.Set("Host", request.Host)
+		request.Request.Header.Set("X-Host", request.Host)
+		request.Request.Header.Set("X-Scheme", scheme)
+		request.Request.Header.Set("X-Forwarded-Host", request.Host)
+		request.Request.Header.Set("X-Forwarded-Proto", scheme)
+		request.Request.Header.Del("Forwarded")
 		request.Request.Header.Del("X-User-Id")
 		request.Request.Header.Del("X-Discover-From-App")
 		request.Request.Header.Del("X-Discover-From-Node")
@@ -355,9 +361,6 @@ func (m *Manager) prepareHost(host Host, version int64) (*service.PreparedHostPo
 		}
 	}
 	if host.HTTPS.Mode == "upload" {
-		if m.rd != nil && !m.sharedKey {
-			return nil, fmt.Errorf("cluster certificates require GATEWAY_CERTIFICATE_KEY")
-		}
 		rawKey, err := m.open(host.HTTPS.SealedKey)
 		if err != nil {
 			return nil, err

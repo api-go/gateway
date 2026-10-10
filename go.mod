@@ -12,7 +12,7 @@ require (
 	apigo.cc/go/log v1.5.17
 	apigo.cc/go/redis v1.5.20
 	apigo.cc/go/safe v1.5.4
-	apigo.cc/go/service v1.5.43
+	apigo.cc/go/service v1.5.44
 	apigo.cc/go/shell v1.5.8
 	apigo.cc/go/starter v1.5.13
 	apigo.cc/go/task v1.5.14

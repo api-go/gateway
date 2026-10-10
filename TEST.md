@@ -1,6 +1,17 @@
 # Gateway 验证报告
 
-## v1.5.12 未发布后台路由配置验证（2026-10-10）
+## v1.5.14 发布验证（2026-10-10）
+
+- 依赖已发布 Service v1.5.44 与 Discover v1.5.16，GOWORK=off；go.mod 无 replace。
+- 公开 Host 回归覆盖 HTTP/HTTPS、协议转发头与伪造头覆盖；Redis 发现代理验证公开 Host。
+- 证书名称从 SAN 自动读取；证书/私钥传错栏拒绝，证书配对验证与泛域名匹配通过。
+- Redis 自动密钥覆盖并发初始化、多节点解密、重启复用、元数据丢失拒绝覆盖和本地缓存恢复。
+- 普通测试、基准及 race 使用已发布依赖；启用 Redis 集成及隔离临时 Redis 的停止/恢复场景。
+- API 核对采用 GOWORK=off go doc -all 与导出源码交叉检查，公开 Go API 未改变。
+- Playwright 覆盖 22 项后台交互：上传证书无需名称、发布关闭编辑器、路由配置与密码更新等。
+- 本次 Apple M3 Max 基准：NewGatewayApp 20.68 ns/op、64 B/op、1 alloc/op；LimiterIPWindow 1425 ns/op、1305 B/op、21 allocs/op；PublishedHostQuota 5418 ns/op、3713 B/op、87 allocs/op。
+
+## v1.5.12 后台路由配置验证（2026-10-10）
 
 - `GOWORK=off go test -v ./...` 和 `GOWORK=off go test -bench=. ./...` 通过。
 - JS 语法检查、Node VM 四类标签页说明渲染及正则反斜杠输出检查通过；后续本轮编辑交互改动已完成 Chrome/Playwright 全流程验收，22 项全部通过且无页面脚本异常。
@@ -76,3 +87,9 @@ BenchmarkNewGatewayApp-16         	57398643	        20.62 ns/op	      64 B/op	  
 BenchmarkLimiterIPWindow-16       	  856179	      1432 ns/op	    1305 B/op	      21 allocs/op
 BenchmarkPublishedHostQuota-16    	  221820	      5252 ns/op	    3633 B/op	      82 allocs/op
 ```
+
+## 开发服务器代理验收（2026-10-10）
+
+- Service 外部回归覆盖 200、204、302、303、401、403、503、响应正文、Location 和两个 Set-Cookie。
+- LLM/QBank 直连与 HTTPS Gateway 对比：登录 303，未登录 API 401；浏览器实际到达 Account 登录页。
+- 正式 Linux amd64 构建使用已发布 Service v1.5.44，不包含本地依赖替换；部署完成后核对远端 SHA256 和容器健康状态。

@@ -46,6 +46,9 @@ func TestGateway(t *testing.T) {
 	backend.Config.Register = registry
 
 	backend.Host("*").GET("/hello", func(req *service.Request) string {
+		if req.Host != "gw.test" || req.Header().Get("X-Host") != "gw.test" || req.Header().Get("X-Scheme") != "http" {
+			t.Errorf("discovery proxy lost public host or scheme: Host=%q X-Host=%q X-Scheme=%q", req.Host, req.Header().Get("X-Host"), req.Header().Get("X-Scheme"))
+		}
 		return "hello from backend, path: " + req.RequestURI
 	})
 	backend.Host("*").GET("/hello/world", func(req *service.Request) string {

@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"net"
 	"net/url"
@@ -57,6 +58,17 @@ func (m *Manager) acmeSettingsLocked() ACMESettings {
 	return ACMESettings{Email: m.config.ACMEEmail, Directory: m.config.ACMEDirectory, AcceptTerms: m.config.ACMEAcceptTerms}
 }
 func parseLibraryCertificate(public string, key []byte) (*tls.Certificate, *x509.Certificate, error) {
+	publicBlock, _ := pem.Decode([]byte(public))
+	if publicBlock == nil || publicBlock.Type != "CERTIFICATE" {
+		return nil, nil, fmt.Errorf("证书文件需要 PEM CERTIFICATE 内容，请勿上传私钥")
+	}
+	keyBlock, remaining := pem.Decode(key)
+	if keyBlock != nil && keyBlock.Type == "EC PARAMETERS" {
+		keyBlock, _ = pem.Decode(remaining)
+	}
+	if keyBlock == nil || (keyBlock.Type != "PRIVATE KEY" && keyBlock.Type != "RSA PRIVATE KEY" && keyBlock.Type != "EC PRIVATE KEY") {
+		return nil, nil, fmt.Errorf("私钥文件需要 PEM PRIVATE KEY 内容（通常为 .key），请勿上传证书；加密私钥需先解密")
+	}
 	return parseLibraryCertificateBytes([]byte(public), key)
 }
 func parseLibraryCertificateBytes(public, key []byte) (*tls.Certificate, *x509.Certificate, error) {
@@ -102,7 +114,7 @@ func (m *Manager) compileCertificatePoolLocked() (*certificatePool, error) {
 					pair, leaf, err := parseLibraryCertificateBytes(data, data)
 					safe.ZeroMemory(data)
 					if err == nil {
-						p.add(id, entry.Name, pair, leaf)
+						p.add(id, strings.Join(entry.Domains, ", "), pair, leaf)
 						for _, cert := range p.exact[domain] {
 							if cert.id == id {
 								cert.automatic = true
@@ -123,7 +135,7 @@ func (m *Manager) compileCertificatePoolLocked() (*certificatePool, error) {
 		if err != nil {
 			return nil, fmt.Errorf("certificate %s: %w", id, err)
 		}
-		p.add(id, entry.Name, pair, leaf)
+		p.add(id, strings.Join(entry.Domains, ", "), pair, leaf)
 	}
 	for _, entries := range []map[string][]*pooledCertificate{p.exact, p.wildcard} {
 		for _, list := range entries {
@@ -273,6 +285,7 @@ func (m *Manager) Certificates() []CertificateRecord {
 	result := []CertificateRecord{}
 	for _, entry := range m.state.Certificates {
 		entry.Domains = append([]string(nil), entry.Domains...)
+		entry.Name = strings.Join(entry.Domains, ", ")
 		entry.SealedKey = ""
 		entry.Certificate = ""
 		entry.Info = CertificateInfo{State: "pending", Domains: entry.Domains}
@@ -310,9 +323,6 @@ func (m *Manager) SaveCertificate(entry CertificateRecord, key []byte, expected 
 	if entry.Mode == "upload" {
 		if entry.Certificate == "" && exists && old.Mode == "upload" {
 			entry.Certificate = old.Certificate
-		}
-		if m.rd != nil && !m.sharedKey {
-			return CertificateRecord{}, fmt.Errorf("cluster certificates require GATEWAY_CERTIFICATE_KEY")
 		}
 		if len(entry.Certificate) > 256<<10 || len(key) > 64<<10 {
 			return CertificateRecord{}, fmt.Errorf("certificate too large")
@@ -359,6 +369,7 @@ func (m *Manager) SaveCertificate(entry CertificateRecord, key []byte, expected 
 	} else {
 		return CertificateRecord{}, fmt.Errorf("invalid certificate mode")
 	}
+	entry.Name = strings.Join(entry.Domains, ", ")
 	entry.Revision = old.Revision + 1
 	next := cloneState(m.state)
 	if next.Certificates == nil {

@@ -202,11 +202,14 @@ func TestCertificateLibraryClusterConvergence(t *testing.T) {
 		t.Fatal(err)
 	}
 	cert, key := certificate(t, "example.test")
-	if _, err := unshared.SaveCertificate(gateway.CertificateRecord{ID: "central", Mode: "upload", Certificate: string(cert)}, key, 0, "test"); err == nil {
-		t.Fatal("cluster upload accepted without shared key")
+	saved, err := unshared.SaveCertificate(gateway.CertificateRecord{ID: "bootstrap", Mode: "upload", Certificate: string(cert)}, key, 0, "test")
+	if err != nil || saved.Name != "example.test" {
+		t.Fatalf("automatic shared key upload: %v", err)
+	}
+	if err := unshared.DeleteCertificate("bootstrap", saved.Revision, "test"); err != nil {
+		t.Fatal(err)
 	}
 	unshared.Close()
-	config.CertificateKey = strings.Repeat("12", 32)
 	one, err := gateway.NewManager(config, service.NewWebServer())
 	if err != nil {
 		t.Fatal(err)
@@ -239,5 +242,100 @@ func TestCertificateLibraryClusterConvergence(t *testing.T) {
 	}
 	if two.Hosts()[0].DomainTLS[0].State != "http" {
 		t.Fatal("certificate deletion did not converge")
+	}
+}
+
+func TestCertificateAutomaticNameAndFileRoles(t *testing.T) {
+	m, _, _ := manager(t)
+	cert, key := certificate(t, "example.test", "*.example.test")
+	saved, err := m.SaveCertificate(gateway.CertificateRecord{ID: "auto-name", Mode: "upload", Certificate: string(cert)}, key, 0, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved.Name != "example.test, *.example.test" {
+		t.Fatalf("generated name %q", saved.Name)
+	}
+	for _, role := range []string{"certificate-in-key", "key-in-certificate"} {
+		t.Run(role, func(t *testing.T) {
+			cert, key := certificate(t, "example.test")
+			public, private := string(cert), key
+			if role == "certificate-in-key" {
+				private = cert
+			} else {
+				public = string(key)
+			}
+			if _, err := m.SaveCertificate(gateway.CertificateRecord{ID: role, Mode: "upload", Certificate: public}, private, 0, "test"); err == nil {
+				t.Fatal("swapped file accepted")
+			}
+		})
+	}
+}
+
+func TestCertificateAutomaticSharedKeyConcurrencyAndRestart(t *testing.T) {
+	if os.Getenv("GATEWAY_REDIS_INTEGRATION") != "1" {
+		t.Skip("set GATEWAY_REDIS_INTEGRATION=1")
+	}
+	t.Setenv("GATEWAY_CERTIFICATE_KEY", "")
+	prefix := fmt.Sprintf("gateway-auto-key-test-%d", time.Now().UnixNano())
+	rd := redis.GetRedis("127.0.0.1:6379", log.DefaultLogger)
+	t.Cleanup(func() {
+		for _, key := range rd.Do("KEYS", prefix+":*").Strings() {
+			rd.Do("DEL", key)
+		}
+	})
+	configs := []gateway.Config{{DataDir: t.TempDir(), Redis: "127.0.0.1:6379", Prefix: prefix, AdminDisabled: true}, {DataDir: t.TempDir(), Redis: "127.0.0.1:6379", Prefix: prefix, AdminDisabled: true}}
+	type outcome struct {
+		manager *gateway.Manager
+		err     error
+	}
+	ready := make(chan outcome, 2)
+	for _, config := range configs {
+		go func() { m, err := gateway.NewManager(config, service.NewWebServer()); ready <- outcome{m, err} }()
+	}
+	nodes := []*gateway.Manager{}
+	for range configs {
+		result := <-ready
+		if result.err != nil {
+			t.Fatal(result.err)
+		}
+		nodes = append(nodes, result.manager)
+		t.Cleanup(result.manager.Close)
+	}
+	cert, key := certificate(t, "example.test")
+	if _, err := nodes[0].SaveCertificate(gateway.CertificateRecord{ID: "shared", Mode: "upload", Certificate: string(cert)}, key, 0, "test"); err != nil {
+		t.Fatal(err)
+	}
+	if err := nodes[1].Reconcile(); err != nil {
+		t.Fatal(err)
+	}
+	if nodes[1].Certificates()[0].Info.State != "valid" {
+		t.Fatal("other node cannot decrypt")
+	}
+	restarted, err := gateway.NewManager(configs[0], service.NewWebServer())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer restarted.Close()
+	if restarted.Certificates()[0].Info.State != "valid" {
+		t.Fatal("restart cannot decrypt")
+	}
+	// Missing shared metadata must never create a replacement key over old ciphertext.
+	rd.Do("DEL", prefix+":certificate-key")
+	isolated := configs[0]
+	isolated.DataDir = t.TempDir()
+	if node, err := gateway.NewManager(isolated, service.NewWebServer()); err == nil {
+		node.Close()
+		t.Fatal("lost key silently replaced")
+	}
+	if rd.Do("EXISTS", prefix+":certificate-key").Bool() {
+		t.Fatal("failed migration published a new key")
+	}
+	migrated, err := gateway.NewManager(configs[0], service.NewWebServer())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer migrated.Close()
+	if migrated.Certificates()[0].Info.State != "valid" {
+		t.Fatal("cached original key migration failed")
 	}
 }

@@ -305,13 +305,13 @@ func TestAdminAuthenticationAndCSRF(t *testing.T) {
 	}
 	login(t, handler, "admin", "replacement-test-password")
 }
-func certificate(t *testing.T, domain string) ([]byte, []byte) {
+func certificate(t *testing.T, domain string, additionalDomains ...string) ([]byte, []byte) {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), crand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
-	template := &x509.Certificate{SerialNumber: big.NewInt(17), Subject: pkix.Name{CommonName: domain}, DNSNames: []string{domain}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(90 * 24 * time.Hour), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}
+	template := &x509.Certificate{SerialNumber: big.NewInt(17), Subject: pkix.Name{CommonName: domain}, DNSNames: append([]string{domain}, additionalDomains...), NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(90 * 24 * time.Hour), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}
 	der, err := x509.CreateCertificate(crand.Reader, template, template, &key.PublicKey, key)
 	if err != nil {
 		t.Fatal(err)
@@ -721,6 +721,43 @@ func TestPreviewProxyTargetWithoutPath(t *testing.T) {
 			expected := strings.TrimSuffix(target, "/") + "/v1/models?x=1"
 			if result.Type != "proxy" || result.Target != expected {
 				t.Fatalf("preview %+v, want %s", result, expected)
+			}
+		})
+	}
+}
+
+func TestProxyPreservesPublicHostAndProtocol(t *testing.T) {
+	m, server, _ := manager(t)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		expectedScheme := r.URL.Query().Get("scheme")
+		if r.Host != "example.test" {
+			t.Errorf("upstream Host %q", r.Host)
+		}
+		for name, want := range map[string]string{"X-Host": "example.test", "X-Forwarded-Host": "example.test", "X-Scheme": expectedScheme, "X-Forwarded-Proto": expectedScheme} {
+			if r.Header.Get(name) != want {
+				t.Errorf("%s=%q, want %q", name, r.Header.Get(name), want)
+			}
+		}
+		if r.Header.Get("Forwarded") != "" {
+			t.Error("client Forwarded survived ingress")
+		}
+		w.WriteHeader(200)
+	}))
+	defer upstream.Close()
+	host := baseHost()
+	host.Proxies = []service.ProxyRule{{Path: "/*", To: upstream.URL + "/"}}
+	savePublish(t, m, host, 0)
+	for _, scheme := range []string{"http", "https"} {
+		t.Run(scheme, func(t *testing.T) {
+			request := httptest.NewRequest("GET", scheme+"://example.test/?scheme="+scheme, nil)
+			request.Header.Set("Host", "spoofed.example")
+			for _, name := range []string{"X-Host", "X-Scheme", "X-Forwarded-Host", "X-Forwarded-Proto", "Forwarded"} {
+				request.Header.Set(name, "spoofed")
+			}
+			response := httptest.NewRecorder()
+			server.Handler().ServeHTTP(response, request)
+			if response.Code != 200 {
+				t.Fatalf("proxy status %d", response.Code)
 			}
 		})
 	}

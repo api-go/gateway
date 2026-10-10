@@ -22,7 +22,7 @@ type Config struct {
 	ACMEEmail       string
 	ACMEDirectory   string // Empty selects Let's Encrypt production; tests should use staging.
 	ACMEAcceptTerms bool
-	CertificateKey  string // Cluster shared encryption key; prefer GATEWAY_CERTIFICATE_KEY.
+	CertificateKey  string // Optional explicit encryption key; automatic persistent management is the default.
 	HTTPSPort       int    // Public HTTPS redirect port; zero derives it from the TLS listener.
 	MaxRateKeys     int
 }

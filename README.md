@@ -1,6 +1,6 @@
 # Gateway
 
-基于 `apigo.cc/go/service` 的动态网关。**v1.5.13** 提供管理后台、独立限流与集中证书管理，依赖 Service v1.5.43 和 Discover v1.5.16。此处以实际实现为准。
+基于 `apigo.cc/go/service` 的动态网关。**v1.5.14** 提供管理后台、独立限流与集中证书管理，依赖 Service v1.5.44 和 Discover v1.5.16。此处以实际实现为准。
 
 ## 启动
 
@@ -103,6 +103,8 @@ gateway:
 
 Gateway 默认 `direct`：以 TCP 对端为客户端地址，不信任客户端提供的转发头或请求 ID，并清理外部内部身份/发现标记。若前面有负载均衡器，配置明确的可信网段：
 
+入口根据实际请求 Host 和 TLS 重建 `Host`、`X-Host`、`X-Scheme`、`X-Forwarded-Host`、`X-Forwarded-Proto`，删除客户端传入的 `Forwarded`。发现节点地址用于连接，上游仍收到原公开 Host，避免应用把内部节点地址误当浏览器访问域名而触发规范域名跳转。HTTP 自动跳转到 HTTPS 仍由 Gateway 执行；应用自身的公开 URL、SSO 回调与同源校验配置需要同步使用实际的 HTTPS 域名。
+
 ```yaml
 gateway:
   ClientIP:
@@ -118,7 +120,7 @@ Service 的默认 legacy 模式保留内部兼容逻辑；其中请求 ID 是约
 
 ## HTTPS 证书
 
-证书名称只是列表和操作记录中的备注，可以填写“生产泛域名证书”，无需是域名；它不参与域名匹配。上传模式无需填写域名，证书库验证 PEM 证书/私钥匹配并从 SAN 提取域名（不以文件名或证书名称推断）；没有 SAN 的证书不支持。证书文件建议包含完整中间证书链，私钥支持 `.key`、`.pem`，扩展名不影响解析，内容须为未加密 PEM 私钥并与证书匹配。私钥使用 AES-GCM 加密落盘，管理 API 不返回私钥、密文或 PEM；证书信息展示来源、覆盖域名、状态和有效期。可先上传证书，也可先发布 Host；两者自动衔接。
+证书名称自动使用证书覆盖的域名，无需填写。上传模式从 SAN 读取域名，不以文件名推断；没有 SAN 的证书不支持。证书与私钥为两个独立上传栏：证书通常使用 `.crt` / `.pem`，内容为 `BEGIN CERTIFICATE`；私钥通常使用 `.key`，内容为 `BEGIN PRIVATE KEY`、`RSA PRIVATE KEY` 或 `EC PRIVATE KEY`。扩展名只作选择提示，实际校验 PEM 内容和证书/私钥配对，上传错栏会明确报错。证书建议包含完整中间证书链，私钥须为未加密 PEM。私钥使用 AES-GCM 加密保存，管理 API 不返回私钥、密文或 PEM。可先上传证书，也可先发布 Host；两者自动衔接。
 
 新 Host 默认 HTTPS.Mode=adaptive，HTTPS.Redirect=auto（off 关闭跳转）。按 SNI / 请求域名精确匹配有效证书；精确匹配失败才尝试单层通配符，例如 *.example.com 覆盖 api.example.com，不覆盖 example.com 或 a.api.example.com。相同匹配级别先选到期更晚的证书，时间相同按 ID 确定顺序。未生效或过期证书不用于 TLS / 跳转。HTTP 回退只保证后续 HTTP 请求可以服务，不能把失败的 HTTPS 握手变成 HTTP，也不会撤销浏览器已缓存的 HSTS。
 
@@ -132,7 +134,9 @@ HTTP-01 要求域名解析到本网关且**公网 80 端口**能转发到 HTTP �
 
 旧 Host HTTPS.Mode=upload/auto 及 SetCertificate API 保留兼容，但新建 Host 统一推荐 adaptive 和集中证书库。
 
-上传证书支持集群，但各节点必须配置同一个 **64 个十六进制字符（32 字节）** 的 `GATEWAY_CERTIFICATE_KEY`。只要 Gateway 配置了 Redis，即使实际只有一个节点也执行此要求；缺少时保存报 `cluster certificates require GATEWAY_CERTIFICATE_KEY`。此密钥用于加密持久化私钥，不是上传的 TLS `.key` 文件。应通过进程环境或服务管理器安全配置并重启所有节点；也支持 Gateway 的 `CertificateKey` 配置字段，环境变量优先。后台显示密钥是否已配置，不返回密钥值。可用 `openssl rand -hex 32` 生成一次并安全分发，不能每次启动重新生成或为不同节点分别生成；已有加密证书时应复用原密钥，任意更换会导致旧数据无法解密。自动缓存与上传私钥均加密；单节点未配置共享密钥时生成本地 `certificate.key`。
+**证书存储加密密钥默认自动管理，无需手动配置。** TLS 私钥用于 HTTPS 握手，内部存储密钥仅用于加密保存这些私钥，两者不同。单机在 DataDir 下生成并保留 `certificate.key`；Redis 模式原子生成 `Prefix:certificate-key`，各节点自动取得同一份密钥并写入权限 0600 的本地缓存，重启不重新生成。Redis 暂不可用时，已有密钥与状态缓存的节点可按原有机制启动，管理写入仍要求 Redis 可用。
+
+自动管理把 Redis 和 DataDir 作为受信任的运行存储；它避免私钥以明文 PEM 保存，但不能抵御同时获得密钥和证书数据的 Redis 访问者。Redis 访问权限与备份应按运行凭据保护。可选 `GATEWAY_CERTIFICATE_KEY`（64 个十六进制字符，即 32 字节）或 `CertificateKey` 继续支持已有部署及需要把密钥与 Redis 分开管理的环境，环境变量优先。显式模式不把该密钥自动写入 Redis。已有显式密钥部署应保持原配置；自动迁移会验证原加密数据，无法恢复原密钥时拒绝初始化，避免覆盖旧数据。HTTP-01 自动签发仍仅支持单节点。
 
 ## 持久化与集群
 
@@ -192,3 +196,7 @@ GATEWAY_REDIS_PROCESS_INTEGRATION=1 go test -race -run TestRedisOutage ./core
 ## v1.5.13 依赖基线
 
 本版本对齐 Log v1.5.17 与发布时模块索引中的上游已发布依赖；公开 API 保持兼容。
+
+## v1.5.14 依赖基线
+
+依赖已发布的 Service v1.5.44 和 Discover v1.5.16；代理保留上游状态码、Location、多条 Set-Cookie 与公开 Host。证书名称从 SAN 自动读取，存储密钥默认自动生成并持久化。正式构建无需本地 replace。
