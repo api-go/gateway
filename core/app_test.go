@@ -23,7 +23,9 @@ func TestGateway(t *testing.T) {
 	}
 	t.Setenv("SERVICE_IP", "127.0.0.1")
 	// 1. 设置服务发现和 Redis 依赖
-	registry := "127.0.0.1:6379"
+	registry := "redis://127.0.0.1:6379/15"
+	testPrefix := fmt.Sprintf("gateway-discover-release-%d", time.Now().UnixNano())
+	backendName := testPrefix + "-backend"
 	rd := redis.GetRedis(registry, log.DefaultLogger)
 	if rd.Error != nil {
 		t.Skip("Redis is not available, skipping gateway integration tests")
@@ -31,11 +33,15 @@ func TestGateway(t *testing.T) {
 	}
 
 	// 清理测试数据
-	rd.Do("DEL", "gateway:host:gw.test", "gateway:hosts")
+	t.Cleanup(func() {
+		for _, key := range rd.Do("KEYS", testPrefix+":*").Strings() {
+			rd.Do("DEL", key)
+		}
+	})
 
 	// 2. 启动一个独立的后端测试服务 test-backend (不使用全局 DefaultServer)
 	backend := service.NewWebServer()
-	backend.Config.App = "test-backend"
+	backend.Config.App = backendName
 	backend.Config.Listen = ":0"
 	backend.Config.Register = registry
 
@@ -61,13 +67,13 @@ func TestGateway(t *testing.T) {
 	gateway.GatewayConf.AdminDisabled = true
 	service.DefaultServer.Config.AutoCertDir = t.TempDir()
 	gateway.GatewayConf.Redis = registry
-	gateway.GatewayConf.Prefix = "gateway"
+	gateway.GatewayConf.Prefix = testPrefix
 
 	// 初始化网关的配置到 Redis
 	proxyRules := []service.ProxyRule{
-		{Path: "^/api/(.*)$", ToApp: "test-backend", ToPath: "/$1"},
-		{Path: "/direct", ToApp: "test-backend", ToPath: "/hello"},
-		{Path: "/v2/*", ToApp: "test-backend", ToPath: "/hello/*"},
+		{Path: "^/api/(.*)$", ToApp: backendName, ToPath: "/$1"},
+		{Path: "/direct", ToApp: backendName, ToPath: "/hello"},
+		{Path: "/v2/*", ToApp: backendName, ToPath: "/hello/*"},
 	}
 	rewriteRules := []service.RewriteRule{
 		{Path: "^/old-api/(.*)$", ToPath: "/api/$1"},
@@ -76,8 +82,8 @@ func TestGateway(t *testing.T) {
 	proxyJson, _ := cast.ToJSONBytes(proxyRules)
 	rewriteJson, _ := cast.ToJSONBytes(rewriteRules)
 
-	rd.Do("HSET", "gateway:host:gw.test", "proxies", string(proxyJson))
-	rd.Do("HSET", "gateway:host:gw.test", "rewrites", string(rewriteJson))
+	rd.Do("HSET", testPrefix+":host:gw.test", "proxies", string(proxyJson))
+	rd.Do("HSET", testPrefix+":host:gw.test", "rewrites", string(rewriteJson))
 
 	// 创建临时静态目录
 	tmpDir, _ := os.MkdirTemp("", "gateway-static")
@@ -88,17 +94,17 @@ func TestGateway(t *testing.T) {
 		"/ui": tmpDir,
 	}
 	staticJson, _ := cast.ToJSONBytes(staticConfig)
-	rd.Do("HSET", "gateway:host:gw.test", "statics", string(staticJson))
+	rd.Do("HSET", testPrefix+":host:gw.test", "statics", string(staticJson))
 
 	// 4. 启动 Gateway 应用
 	app := gateway.NewGatewayApp()
 
 	// 设置独立的端口给 Gateway 的 WebServer
-	service.Config.App = "gateway"
+	service.Config.App = testPrefix
 	service.Config.Listen = ":0"
 	service.Config.Register = registry
 	service.Config.Calls = map[string]service.CallConfig{
-		"test-backend": {Timeout: 1000},
+		backendName: {Timeout: 1000},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -207,13 +213,13 @@ func TestGateway(t *testing.T) {
 	// ============================================
 	// 新增一个新代理规则，删除老的
 	newProxyRules := []service.ProxyRule{
-		{Path: "/new-direct", ToApp: "test-backend", ToPath: "/hello"},
+		{Path: "/new-direct", ToApp: backendName, ToPath: "/hello"},
 	}
 	newProxyJson, _ := cast.ToJSONBytes(newProxyRules)
-	rd.Do("HSET", "gateway:host:gw.test", "proxies", string(newProxyJson))
+	rd.Do("HSET", testPrefix+":host:gw.test", "proxies", string(newProxyJson))
 
 	// 发布更新消息
-	rd.Do("PUBLISH", "gateway:channel", `"gw.test"`)
+	rd.Do("PUBLISH", testPrefix+":channel", `"gw.test"`)
 
 	// 等待接收和更新
 	_ = timer.Retry(func() error {

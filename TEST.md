@@ -64,3 +64,15 @@ BenchmarkNewGatewayApp-16         	61678689	        20.05 ns/op	      64 B/op	  
 BenchmarkLimiterIPWindow-16       	  874876	      1410 ns/op	    1305 B/op	      21 allocs/op
 BenchmarkPublishedHostQuota-16    	  232284	      5161 ns/op	    3633 B/op	      82 allocs/op
 ```
+
+## v1.5.13 发布验证（2026-10-10）
+
+- GOWORK=off go test -v ./... 与 go test -bench=. ./... 通过，依赖均为已发布 tag。
+- API 以 GOWORK=off go doc 与导出源码交叉核对（getExports 工具不可用）。
+- GOWORK=off go test -race ./... 通过。
+
+```text
+BenchmarkNewGatewayApp-16         	57398643	        20.62 ns/op	      64 B/op	       1 allocs/op
+BenchmarkLimiterIPWindow-16       	  856179	      1432 ns/op	    1305 B/op	      21 allocs/op
+BenchmarkPublishedHostQuota-16    	  221820	      5252 ns/op	    3633 B/op	      82 allocs/op
+```

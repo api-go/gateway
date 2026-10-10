@@ -1,6 +1,6 @@
 # Gateway
 
-基于 `apigo.cc/go/service` 的动态网关。**v1.5.11** 提供管理后台、独立限流与集中证书管理，依赖 Service v1.5.42 和 Discover v1.5.15。此处以实际实现为准。
+基于 `apigo.cc/go/service` 的动态网关。**v1.5.13** 提供管理后台、独立限流与集中证书管理，依赖 Service v1.5.43 和 Discover v1.5.16。此处以实际实现为准。
 
 ## 启动
 
@@ -186,5 +186,9 @@ GATEWAY_REDIS_PROCESS_INTEGRATION=1 go test -race -run TestRedisOutage ./core
 | NewLimiter、Limiter.Evaluate / Sweep | 单独使用限流；Evaluate 包含编译成本，实际发布 Host 的热路径使用预编译规则 |
 
 ## v1.5.12 依赖基线
+
+本版本对齐 Log v1.5.17 与发布时模块索引中的上游已发布依赖；公开 API 保持兼容。
+
+## v1.5.13 依赖基线
 
 本版本对齐 Log v1.5.17 与发布时模块索引中的上游已发布依赖；公开 API 保持兼容。
