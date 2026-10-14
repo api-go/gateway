@@ -1,5 +1,12 @@
 # Gateway 验证报告
 
+## v1.5.15 发布验证
+- 2026-10-14 补充：`GOWORK=off GATEWAY_REDIS_PROCESS_INTEGRATION=1 go test -v -run '^TestRedisOutageRetainsTrafficAndRecovers$' -count=1 -timeout=60s ./...` 通过（场景 0.24s）。使用随机端口的独立临时 Redis，验证中断期间保留路由、拒绝依赖 Redis 的操作及重启后恢复；测试进程已退出，现有 Redis 返回 PONG。
+- 2026-10-14 本次 Open 联动：GOWORK=off 全量（GATEWAY_REDIS_INTEGRATION=1）、基准和发布代理专项 race（2 次）通过；Redis 进程故障模拟已单独启用并通过（见补充记录）。Apple M3 Max：NewGatewayApp 20.29 ns/op，LimiterIPWindow 1424 ns/op，PublishedHostQuota 5425 ns/op。
+- `TestPublishedProxySharesHTTP2AndWebSocketTLSListener` 验证发布后路由、同一 TLS 监听的 HTTP2/WS、公开 Host、Origin、Cookie、子协议、二进制和关闭码；`TestPublishedProxyRetainsWebSocketRejection` 验证拒绝状态/正文/Cookie。
+- `GOWORK=off` 构建依赖已发布 Service v1.5.45、Discover v1.5.17、HTTP v1.5.12；go.mod 无 replace。导出 API 使用 go doc -all 与源码核对。
+- 2026-10-14：`GOWORK=off go test -v ./...`、`go test -bench=. ./...` 通过；需显式环境开关的 Redis 集成场景仍跳过。Apple M3 Max：NewGatewayApp 19.35 ns/op，LimiterIPWindow 1270 ns/op，PublishedHostQuota 4790 ns/op。
+
 ## v1.5.14 发布验证（2026-10-10）
 
 - 依赖已发布 Service v1.5.44 与 Discover v1.5.16，GOWORK=off；go.mod 无 replace。

@@ -1,8 +1,12 @@
 # Gateway
 
-基于 `apigo.cc/go/service` 的动态网关。**v1.5.14** 提供管理后台、独立限流与集中证书管理，依赖 Service v1.5.44 和 Discover v1.5.16。此处以实际实现为准。
+基于 `apigo.cc/go/service` 的动态网关。**v1.5.15** 提供管理后台、独立限流与集中证书管理，依赖 Service v1.5.45 和 Discover v1.5.17。此处以实际实现为准。
 
 ## 启动
+
+`go.mod` 使用已发布 Service v1.5.45 的 WebSocket 代理实现，普通请求继续使用既有 HTTP/2 / H2C 配置，WebSocket 单独使用 HTTP/1.1。
+
+同时依赖 HTTP v1.5.12、Discover v1.5.17 的统一 Open 接口，发现代理可透传握手 Cookie 和拒绝响应。WebSocket 超时/消息限制/压缩设置在 `service.yaml` 的 `WebSocketProxy` 下；默认握手与写入 30 秒，空闲和消息大小限制关闭，压缩关闭。私有 CA / mTLS 可通过 Service 的代理客户端或独立 Dialer 配置。
 
 ```sh
 go build -o gateway .
@@ -197,6 +201,6 @@ GATEWAY_REDIS_PROCESS_INTEGRATION=1 go test -race -run TestRedisOutage ./core
 
 本版本对齐 Log v1.5.17 与发布时模块索引中的上游已发布依赖；公开 API 保持兼容。
 
-## v1.5.14 依赖基线
+## v1.5.15 依赖基线
 
-依赖已发布的 Service v1.5.44 和 Discover v1.5.16；代理保留上游状态码、Location、多条 Set-Cookie 与公开 Host。证书名称从 SAN 自动读取，存储密钥默认自动生成并持久化。正式构建无需本地 replace。
+依赖已发布的 Service v1.5.45 和 Discover v1.5.17；代理保留上游状态码、Location、多条 Set-Cookie 与公开 Host。证书名称从 SAN 自动读取，存储密钥默认自动生成并持久化。正式构建无需本地 replace。
