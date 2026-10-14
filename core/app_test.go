@@ -123,6 +123,14 @@ func TestGateway(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Subscriptions must be live, so updates do not wait for periodic reconciliation.
+	for _, channel := range []string{testPrefix + ":manage", testPrefix + ":channel"} {
+		counts := rd.Do("PUBSUB", "NUMSUB", channel).Results()
+		if len(counts) != 2 || counts[1].Int() < 1 {
+			t.Fatalf("Redis notification subscription inactive: %s", channel)
+		}
+	}
+
 	gwAddr := service.DefaultServer.Addr
 	if gwAddr == "" {
 		t.Fatalf("Gateway address is empty")

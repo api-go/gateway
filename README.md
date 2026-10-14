@@ -1,6 +1,8 @@
 # Gateway
 
-基于 `apigo.cc/go/service` 的动态网关。**v1.5.15** 提供管理后台、独立限流与集中证书管理，依赖 Service v1.5.45 和 Discover v1.5.17。此处以实际实现为准。
+基于 `apigo.cc/go/service` 的动态网关。**v1.5.16** 提供管理后台、独立限流与集中证书管理，依赖 Service v1.5.45 和 Discover v1.5.17。此处以实际实现为准。
+
+Redis 通知订阅随 GatewayApp 启动与停止，管理配置和旧路由通知及时生效。
 
 ## 启动
 

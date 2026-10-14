@@ -73,6 +73,7 @@ func (g *GatewayApp) Start(ctx context.Context, logger *log.Logger) error {
 				}
 			}
 		})
+		manager.rd.Start()
 		if err := g.loadLegacy(); err != nil {
 			logger.Warning("legacy gateway configuration rejected", "error", err.Error())
 		}
@@ -104,6 +105,7 @@ func (g *GatewayApp) Stop(ctx context.Context) error {
 	if g.manager != nil && g.manager.rd != nil {
 		g.manager.rd.Unsubscribe(g.manager.config.Prefix + ":manage")
 		g.manager.rd.Unsubscribe(g.manager.config.Prefix + ":channel")
+		g.manager.rd.Stop()
 	}
 	if g.admin != nil {
 		if err := g.admin.Shutdown(ctx); err != nil && first == nil {

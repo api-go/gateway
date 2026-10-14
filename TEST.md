@@ -1,5 +1,12 @@
 # Gateway 验证报告
 
+## v1.5.16 发布验证（2026-10-14）
+
+- GOWORK=off 使用正式依赖；启用 Redis 的全量、基准与 race 检查通过。
+- TestGateway 断言动态测试前缀的 manage / channel 通道已有活跃订阅，验证通知更新与停止。
+- go doc -all 与源码核对，公共 API 保持一致。
+- Apple M3 Max：NewGatewayApp 18.59 ns/op、LimiterIPWindow 1305 ns/op、PublishedHostQuota 4900 ns/op。
+
 ## v1.5.15 发布验证
 - 2026-10-14 补充：`GOWORK=off GATEWAY_REDIS_PROCESS_INTEGRATION=1 go test -v -run '^TestRedisOutageRetainsTrafficAndRecovers$' -count=1 -timeout=60s ./...` 通过（场景 0.24s）。使用随机端口的独立临时 Redis，验证中断期间保留路由、拒绝依赖 Redis 的操作及重启后恢复；测试进程已退出，现有 Redis 返回 PONG。
 - 2026-10-14 本次 Open 联动：GOWORK=off 全量（GATEWAY_REDIS_INTEGRATION=1）、基准和发布代理专项 race（2 次）通过；Redis 进程故障模拟已单独启用并通过（见补充记录）。Apple M3 Max：NewGatewayApp 20.29 ns/op，LimiterIPWindow 1424 ns/op，PublishedHostQuota 5425 ns/op。
