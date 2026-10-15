@@ -39,7 +39,7 @@ func Run() {
 		}
 	})
 	// 2. 初始化 Starter 信息
-	starter.SetAppInfo("gateway", "1.5.11")
+	starter.SetAppInfo("gateway", "1.5.17")
 	starter.SetUsage(`High-performance API gateway based on apigo.cc/go/service.
 Full Guide: https://apigo.cc/go/service
 

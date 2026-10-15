@@ -1,0 +1,49 @@
+Gateway 监控低代码
+
+使用匿名 JavaScript 函数（不写函数名），保存时检查语法。
+仅可信管理员可以维护检查脚本、报警脚本和报警通道绑定。
+go/js SafeMode 拦截已标注的不安全模块操作；它不是操作系统隔离环境。
+
+响应检查（最多 5 秒）：
+function(response) {
+  const data = JSON.parse(response.body);
+  return response.status === 200 && data.status === "ok";
+}
+response: {status, body, contentType, durationMS, truncated}
+body 最多前 4096 字节。HTTP 状态、包含文本和脚本检查均须通过。
+必须返回布尔 true；false、非布尔值、异常、超时均算失败。
+配置测试只编译并验证脚本，不调用上游；业务监控才执行检查函数。
+
+高级报警（最多 5 次 HTTP 请求，总时间最多 8 秒）：
+function(event, http) {
+  const reply = http.request({
+    url: "https://your-robot.example/send",
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    payload: {text:event.domain + " " + event.state + " HTTP " + event.status}
+  });
+  if (!reply.ok) return reply;
+  // 自定义接口的业务回执由脚本自行检查，例如 reply.data.code === 0。
+  return {ok:true};
+}
+event: {hostID, domain, state, status, reason, time}
+state 为 故障 / 恢复 / 测试。
+高级模式不要求表单 Webhook / 密钥。URL、签名与内容全部在脚本中定义；可调用 crypto.HMACSHA256(key, data)、encoding.Base64(data) 等原生低代码模块。界面提供可直接插入的钉钉加签示例。脚本中的凭据会随脚本保存，并对管理员可见。
+http.request({url, method, headers, payload}) 由 go/api 发起，默认 POST。
+返回 {ok, statusCode, headers, data}；data 为 JSON 对象或原始文本。
+可依据一次回执决定下一步发送或自定义备用通道；成功须至少有一次成功请求，
+并由脚本返回 {ok:true}。不执行 HTTP 请求 或只返回虚构成功不会视为发送成功。
+请求体及响应体各最多 64 KiB。
+
+普通机器人建议使用内置表单：
+- 钉钉：文本消息，毫秒 timestamp + HMAC-SHA256 签名查询参数。
+- 飞书：文本消息，秒 timestamp + HMAC-SHA256 空消息签名，放在请求体。
+- 企微：文本消息和 Webhook 中的 key，不使用上述 HMAC 签名选项。
+内置通道同时检查 HTTP 和平台业务错误码；HTTP 200 不一定表示送达。
+
+协议参考：
+https://open.dingtalk.com/document/robots/customize-robot-security-settings
+https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot
+https://developer.work.weixin.qq.com/document/path/91770
+
+报警调度：连续失败次数在 Host 监控中设置；通道可设置故障重复提醒秒数（0 仅状态变化）及带时区的勿扰开始/结束时间，支持跨午夜。勿扰不停止监控，结束后下一次检查发送待发送通知；手动测试报警不受勿扰限制。

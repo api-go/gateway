@@ -2,6 +2,8 @@ package gateway
 
 import (
 	"apigo.cc/go/cast"
+	"apigo.cc/go/config"
+	"apigo.cc/go/discover"
 	"apigo.cc/go/log"
 	"apigo.cc/go/redis"
 	"apigo.cc/go/service"
@@ -59,6 +61,21 @@ func (g *GatewayApp) Start(ctx context.Context, logger *log.Logger) error {
 		manager.Close()
 		return err
 	}
+	// Gateway is an ingress and discovery client, not a business upstream.
+	// Use Discover's lifecycle to remove Service's own registration while retaining client subscriptions.
+	if discover.Config.Registry != "" {
+		discover.Stop()
+		if !discover.Start("") {
+			logger.Warning("gateway discovery client subscriptions unavailable")
+		}
+	}
+	manager.mu.Lock()
+	manager.registryName = service.DefaultServer.Config.Register
+	if manager.registryName == "" {
+		manager.registryName = discover.Config.Registry
+	}
+	manager.captureRegistryLocked()
+	manager.mu.Unlock()
 	if manager.rd != nil {
 		manager.rd.Subscribe(manager.config.Prefix+":manage", nil, func(data []byte) {
 			if err := manager.Reconcile(); err != nil {
@@ -85,7 +102,21 @@ func (g *GatewayApp) Start(ctx context.Context, logger *log.Logger) error {
 		}
 		return g.loadLegacy()
 	}, task.Config{Policy: task.PolicySkip, Timeout: 10 * time.Second, SuppressSuccessLog: true})
+	g.scheduler.Add("gateway-monitor", "@every 5s", manager.MonitorTick, task.Config{Policy: task.PolicySkip, Timeout: 30 * time.Second, SuppressSuccessLog: true})
+	g.scheduler.Add("gateway-log-retention", "@every 24h", func(ctx context.Context) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		var conf log.Config
+		if err := config.Load(&conf, "log"); err != nil {
+			return err
+		}
+		return PruneGatewayLogs(conf, manager.config.LogRetentionDays, time.Now())
+	}, task.Config{Policy: task.PolicySkip, Timeout: 30 * time.Second, SuppressSuccessLog: true})
 	g.scheduler.Start(context.Background(), logger)
+	g.scheduler.Run("gateway-log-retention")
+	// Prime startup immediately; later ticks continue fairly in batches of four.
+	g.scheduler.Run("gateway-monitor")
 	if err := manager.Reconcile(); err != nil {
 		logger.Warning("gateway started with retained configuration", "error", err.Error())
 	}
@@ -124,9 +155,20 @@ func (g *GatewayApp) Reload() error {
 	if err := service.DefaultServer.Reload(); err != nil {
 		return err
 	}
+	if discover.Config.Registry != "" {
+		discover.Stop()
+		discover.Start("")
+	}
 	if g.manager == nil {
 		return nil
 	}
+	g.manager.mu.Lock()
+	g.manager.registryName = service.DefaultServer.Config.Register
+	if g.manager.registryName == "" {
+		g.manager.registryName = discover.Config.Registry
+	}
+	g.manager.captureRegistryLocked()
+	g.manager.mu.Unlock()
 	if err := g.manager.server.SetClientIPPolicy(g.manager.config.ClientIP); err != nil {
 		return err
 	}

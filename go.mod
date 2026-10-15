@@ -3,16 +3,19 @@ module apigo.cc/go/gateway
 go 1.25.0
 
 require (
+	apigo.cc/go/api v1.5.19
 	apigo.cc/go/cast v1.5.8
 	apigo.cc/go/config v1.5.8
 	apigo.cc/go/crypto v1.5.8
 	apigo.cc/go/discover v1.5.17
 	apigo.cc/go/encoding v1.5.8
 	apigo.cc/go/file v1.5.9
+	apigo.cc/go/http v1.5.12
+	apigo.cc/go/js v1.5.17
 	apigo.cc/go/log v1.5.17
 	apigo.cc/go/redis v1.5.20
 	apigo.cc/go/safe v1.5.4
-	apigo.cc/go/service v1.5.45
+	apigo.cc/go/service v1.5.46
 	apigo.cc/go/shell v1.5.8
 	apigo.cc/go/starter v1.5.13
 	apigo.cc/go/task v1.5.14
@@ -24,13 +27,16 @@ require (
 )
 
 require (
-	apigo.cc/go/http v1.5.12 // indirect
 	apigo.cc/go/id v1.5.9 // indirect
 	apigo.cc/go/jsmod v1.5.5 // indirect
 	apigo.cc/go/rand v1.5.4 // indirect
 	apigo.cc/go/watch v1.5.10 // indirect
+	github.com/dlclark/regexp2 v1.11.4 // indirect
+	github.com/dop251/goja v0.0.0-20260311135729-065cd970411c // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/google/pprof v0.0.0-20250317173921-a4b03ec1a45e // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/tdewolff/minify/v2 v2.24.17 // indirect
 	github.com/tdewolff/parse/v2 v2.8.16 // indirect

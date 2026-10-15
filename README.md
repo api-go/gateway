@@ -1,12 +1,14 @@
 # Gateway
 
-基于 `apigo.cc/go/service` 的动态网关。**v1.5.16** 提供管理后台、独立限流与集中证书管理，依赖 Service v1.5.45 和 Discover v1.5.17。此处以实际实现为准。
+[English](README.en.md)
+
+基于 `apigo.cc/go/service` 的动态网关。**v1.5.17** 提供管理后台、独立限流与集中证书管理，依赖已发布的 Service v1.5.46、Discover v1.5.17、API v1.5.19、JS v1.5.17。此处以实际实现为准。
 
 Redis 通知订阅随 GatewayApp 启动与停止，管理配置和旧路由通知及时生效。
 
 ## 启动
 
-`go.mod` 使用已发布 Service v1.5.45 的 WebSocket 代理实现，普通请求继续使用既有 HTTP/2 / H2C 配置，WebSocket 单独使用 HTTP/1.1。
+`go.mod` 使用已发布 Service v1.5.46 的 WebSocket 代理实现，普通请求继续使用既有 HTTP/2 / H2C 配置，WebSocket 单独使用 HTTP/1.1。
 
 同时依赖 HTTP v1.5.12、Discover v1.5.17 的统一 Open 接口，发现代理可透传握手 Cookie 和拒绝响应。WebSocket 超时/消息限制/压缩设置在 `service.yaml` 的 `WebSocketProxy` 下；默认握手与写入 30 秒，空闲和消息大小限制关闭，压缩关闭。私有 CA / mTLS 可通过 Service 的代理客户端或独立 Dialer 配置。
 
@@ -42,11 +44,23 @@ gateway:
 
 `AdminDisabled: true` 关闭后台监听；AdminListen 可覆盖地址或端口，包括 `127.0.0.1:81`。修改管理监听或开关后重启服务。独立管理监听使用 HTTP，可按需要经具有 HTTPS 的受控入口访问。低端口绑定要求取决于系统权限，无法绑定会报错，不会静默换端口。旧工作区的多账号数据不再用于登录，需要运行上述命令设置单一密码。
 
-发布版使用已发布的 Service v1.5.42 和 Discover v1.5.15，不含本地 replace；可在不保留相邻模块 checkout 的情况下独立编译。根目录 CLI 保持兼容，可复用的 Go API 位于 `apigo.cc/go/gateway/core`。
+发布版使用已发布的 Service v1.5.46 和 Discover v1.5.17，不含本地 replace；可在不保留相邻模块 checkout 的情况下独立编译。根目录 CLI 保持兼容，可复用的 Go API 位于 `apigo.cc/go/gateway/core`。
+
+## API Key 程序接入（v1.5.17）
+
+后台新增 **API 接入**：创建、撤销命名 Key，指定 Host ID（`*` 为所有 Host，含未来新 ID）、到期时间和 read / draft / publish / delete 权限。密钥只在创建响应显示一次，权威状态仅保存 SHA-256 摘要；列表展示本节点最近成功认证时间，重启清空此时间。Key 管理仅允许管理员会话和 CSRF，不接受程序 Key。
+
+使用管理监听上的 `/api/v1/` 接口，认证头为 `Authorization: Bearer <API_KEY>`；无需浏览器登录或 CSRF。提供 `GET hosts / nodes` 和 `POST draft / preview / publish / rollback / delete`，复用原 Host 校验、revision、草稿发布及审计；Actor 为 `api-key:<ID>`。Host 列表及节点 versions 按 ID 授权过滤。Key 不授予证书库、设置或其他 Key 的管理权限。Host ID 授权允许修改该 Host 的完整配置，包括域名、代理和静态目录；不是域名或文件目录的沙箱。
+
+后台提供“复制接入说明”、查看及下载 `/api-guide.txt`，TXT 无需认证，不包含凭据，含字段、curl 示例、错误码和节点生效检查。说明使用当前浏览器管理地址，程序所在机器必须能访问该地址；密钥单独配置。跨不可信网络通过 HTTPS 受控入口访问。
+
+Key 与现有单机 / Redis 状态一起持久化、备份，凭据变更带全局 revision。每次程序请求从权威存储校验撤销与到期；Redis 不可用时拒绝凭据认证，不使用保留缓存授权。撤销影响后续鉴权，已经通过鉴权的在途请求可能完成。现有 Cookie / CSRF 管理接口保持兼容。
+
+完整程序接入步骤见 [TXT 指引](core/web/api-guide.txt)。新增导出结构 `APIKey` 和 `State.APIKeys` 仅用于状态模型，`Hash` 为内部摘要，不经 HTTP 返回有效值，不应对外序列化原始 State。
 
 ## 后台与发布
 
-导航为 **Hosts、证书、事件、设置**。Host 列表显示域名、证书、规则、限流、草稿/版本状态；固定高度编辑窗口内部滚动，标签页为配置、代理、重写、重定向、静态文件、限流、发布记录：
+导航为 **Hosts、证书、服务发现、监控、管理日志、API 接入、设置**。Host 列表显示域名/目标、协议、独立规则列及生效/配置测试/上游测试状态；固定高度编辑窗口内部滚动，标签页为配置、代理、重写、重定向、静态文件、限流、监控、发布记录：
 
 - Host 无需填写配置名称，后台以首个域名作为列表名称和编辑标题，保存时自动生成 Name；多域名仍全部参与匹配。
 - 一个 Host 可以绑定多个域名，默认自动匹配证书；每个域名可使用不同证书。无有效证书时使用 HTTP，证书可用后自动支持 HTTPS，并默认将 HTTP 跳转到 HTTPS；可关闭跳转或选择仅 HTTP。
@@ -60,7 +74,7 @@ gateway:
 
 新管理配置以 Host 为单位完整替换，不与该 Host 的旧路由混合。未纳管域名仍使用原 Service/YAML/Redis 路由；删除管理 Host 后也恢复该域名的原有处理。一次请求固定使用进入时的配置快照。
 
-当前本地改动为 **v1.5.12（未发布）**：以下默认值和填写指南已在后台实现；已发布版本仍为 v1.5.11。
+以下默认值和填写指南从 v1.5.12 起提供。
 
 ## 路由填写指南
 
@@ -187,6 +201,12 @@ GATEWAY_REDIS_PROCESS_INTEGRATION=1 go test -race -run TestRedisOutage ./core
 | Manager.SaveDraft / Publish / Rollback / Delete | 修改 Host；expected 为当前草稿 revision，冲突返回 ErrConflict；发布后形成新版本 |
 | Manager.Hosts / Events / Nodes / Services / Settings | 读取脱敏 Host、事件、节点、已引用服务及运行参数 |
 | Manager.Reconcile | 从权威存储校对并应用完整配置，失败保留旧请求快照 |
+| Manager.CheckHost / TestUpstream | 配置发布校验与有界上游 GET 测试；后者接收 context 和 PreviewInput |
+| Manager.RegistryServices / ReadRegistryServices | 只读原生注册中心服务与节点 |
+| Manager.MonitorStatuses / MonitorHistory / MonitorMatrix | 配置状态、近期检查状态与小时/日周期汇总 |
+| Manager.MonitorTick / RunMonitorCheck | 按周期批量调度或检查一个已发布 Host；嵌入时由调用方管理调度和 context |
+| Manager.SendAlert | 使用配置的报警通道发送 AlertEvent |
+| PruneGatewayLogs | 按配置的日志文件名及日期格式清理过期文件 |
 | Manager.Preview、ValidateHost | 路由与限流适用性预览，以及结构校验；不消耗额度 |
 | Manager.Certificates / SaveCertificate / DeleteCertificate | 独立证书库；expected 校验证书 revision，私钥加密且擦除传入切片 |
 | Manager.ACMESettings / SetACMESettings / IssueCertificate | 持久化签发设置（expected 为全局 revision）及有界后台申请 |
@@ -206,3 +226,69 @@ GATEWAY_REDIS_PROCESS_INTEGRATION=1 go test -race -run TestRedisOutage ./core
 ## v1.5.15 依赖基线
 
 依赖已发布的 Service v1.5.45 和 Discover v1.5.17；代理保留上游状态码、Location、多条 Set-Cookie 与公开 Host。证书名称从 SAN 自动读取，存储密钥默认自动生成并持久化。正式构建无需本地 replace。
+
+## 配置与上游业务测试（v1.5.17）
+
+编辑 Host 点击测试，默认立即执行配置测试；校验域名、路由、限流、证书和发布冲突，用绿色通过或红色错误显示结论。不保存、不发布、不生成业务请求，也不联系上游。Go API Manager.CheckHost 与 Publish 共用发布校验。
+
+切换“上游业务测试”首次自动发起真实 GET，显示成功（2xx）、跳转（3xx，未跟随）、认证失败（401/403）或其他错误。可调整域名、路径、User Agent、Header、Cookie 后再次测试；域名/路径/User Agent 按 Host 保存到 LocalStorage，Header/Cookie 不持久化。最长 10 秒、展示前 4096 字节，不消耗网关额度；不会自动转发管理员登录凭据。响应详情默认折叠，连通性不替代完整业务认证及限流验收。
+
+Go API：Manager.TestUpstream(ctx, PreviewInput) 返回 UpstreamTestResult。后台 POST /api/check-host 与 /api/upstream-test 使用管理员 Cookie 和 CSRF，程序 API Key 无此权限。原 POST /api/preview 继续支持按请求参数进行规则预演。
+
+发布只有成功后才关闭窗口并提示成功；失败在编辑窗口内显示并保留内容。重复域名显示所属已发布 Host 和 ID，不能同时发布两个相同域名的 Host。
+
+## 服务发现与监控（v1.5.17）
+
+**服务发现**读取 Service 当前注册中心的原生 Redis 注册 Hash 和心跳，展示所有已注册服务（包括未被代理引用的服务）、节点、权重和心跳过期状态，每 30 秒刷新。只读，不手工摘除节点或改权重；原生服务会自行心跳、重注册和执行失败摘除。Gateway 管理存储与注册中心可以不同，以 Service.Register 为准。直接 Go 使用可调用 RegistryServices / ReadRegistryServices。
+
+**Host 列表**点击名称进入编辑；右侧依次展示生效、配置测试、上游测试。配置状态是当前草稿的原生发布校验；上游状态绑定配置指纹，修改配置后旧结果不显示为新配置通过。启用监控时以自动检查结果为准；未启用时可显示本节点最近的手动业务测试。未知状态灰色、失败红色、通过绿色，长期未更新的自动结果显示已过期。
+
+**监控配置**位于 Host 的监控标签页，保存草稿并发布后生效，已发布的代理 Host 默认启用，可显式关闭。默认每 60 秒 GET 上游首页 /，默认 HTTP 2xx/3xx 为可访问（不跟随跳转），连续 3 次失败报警。可设置具体请求域名、路径及查询参数、加密请求 Header、完整直接监控 URL、期望状态、响应需包含的文本、低代码检查及报警通道。指定完整 URL 后不走 Host 代理匹配；否则按该 Host 的原生重写和代理规则检查。通配 Host 需提供具体域名或直接 URL。Header 留空保留，{} 清除；URL 与脚本作为配置可导出，认证信息应放加密 Header。
+
+每次请求最多 10 秒，响应检查只读前 4096 字节；不跟随跳转、不消耗网关限流额度。检查是上游采样，不代表公共入口 TLS、网关身份权限或每个副本均正常。低代码检查使用 go/js 匿名函数，运行最多 5 秒，须返回 true；状态、包含文本及脚本条件均须通过。
+
+**监控历史**使用每 Host 单 Hash，日汇总保留 30 天、小时汇总保留 24 小时、内部近期槽保留 10 轮以恢复报警状态。周期详情展示检查次数、平均耗时、失败次数及一份代表性响应：优先保留最近失败，全成功时保留最后成功，正文最多 4096 字节。旧数据缺失项明确标注；周期汇总不等同全时段 SLA。task 每 5 秒调度一批最多 4 个到期 Host，周期是目标频率，慢响应和排队可能延后。单节点避免重叠，Redis 模式以 45 秒租约避免多节点同时检查同一 Host；存储不可用时不凭本地缓存冒充共享监控成功。一个 Host 的历史异常不阻断其他 Host。
+
+**报警通道**在监控模块以独立弹窗维护钉钉、企微、飞书及高级自定义通道。钉钉/飞书可启用原生签名，企微群机器人使用 Webhook 的 key；发送由 go/api 执行，同时校验 HTTP 与平台业务回执。Webhook、签名密钥及监控 Header 复用现有持久加密密钥加密，不回显；备份应保留 state.json / Redis 状态、certificate.key / 共享密钥及 monitor 历史。缺失原密钥时拒绝覆盖生成新密钥。
+
+连续失败达到阈值后通知，恢复再通知，相同已确认状态不重复发送；发送失败在后续检查重试。网络断开、进程退出或存储提交失败时，外部发送与本地记录无法原子提交，不保证恰好一次送达。测试报警按钮会明确确认后发送真实消息。
+
+高级发送函数使用 (event, http)，无需填写标准 Webhook/签名字段，通过 http.request({url, method, headers, payload}) 独立发送，界面可插入钉钉签名示例，可构造 URL、Header、请求体、多个步骤和回执判断；最多 5 次 HTTP 请求，总时间最多 8 秒，至少一次成功请求并返回 {ok:true} 才视为成功。请求和响应各最多 64 KiB。脚本由可信管理员维护，SafeMode 不等于操作系统沙箱。API Key 不可修改监控脚本或通道绑定，改变有加密 Header 的路由时须明确清除/替换凭据。详见 [低代码指引](core/web/lowcode-guide.txt)。
+
+新增 Go API：Manager.RegistryServices、ReadRegistryServices、Manager.MonitorStatuses、Manager.MonitorHistory、Manager.MonitorTick、Manager.RunMonitorCheck、Manager.SendAlert；GatewayApp 自动管理监控调度生命周期，直接嵌入 NewManager 时由调用方调度 MonitorTick 并传播取消。状态模型新增 MonitorConfig、MonitorSample、MonitorDomainResult、MonitorOutput、MonitorBucket、MonitorMatrixRow、HostMonitorStatus、AlertChannel、AlertEvent、RegisteredService、RegistryNode。
+
+机器人协议：[钉钉安全设置](https://open.dingtalk.com/document/robots/customize-robot-security-settings)、[飞书自定义机器人](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot)、[企微群机器人](https://developer.work.weixin.qq.com/document/path/91770)。
+
+后台登录使用 Gateway 自有 Cookie/CSRF 会话，非 Service 默认鉴权。会话加密持久化至 DataDir/admin-sessions 或 Redis 的 Prefix:admin-session:*，8 小时有效期内重启无需重新登录。退出删除服务端会话；改密码撤销旧会话。单机过期文件在下一次登录清理，Redis 使用 TTL；备份需保留持久加密密钥。
+
+Gateway 默认作为发现客户端，在 Service 启动后通过 Discover 原生生命周期解除自身注册并保留上游订阅；多地址逐节点展示。注册中心原生 Hash 不包含协议或运行时长，页面「调用协议」展示实际调用配置 HTTP/H2C/HTTPS（未配置默认 H2C），心跳只显示在线/过期。Hosts 展示独立规则列和纯文字状态；新鲜自动监控通过即视为对应已测配置的上游测试通过。草稿修改后不会沿用旧配置的通过结果。
+
+报警通道可临时停用，签名密钥仅启用签名时显示；连续失败阈值在 Host 中设置，通道重复提醒为 0 时只通知状态变化，否则按秒数重复未恢复故障。勿扰时段使用显式时区，支持跨午夜，结束后下次检查发送仍待发送的故障/恢复；手动测试消息不受勿扰限制。高级脚本内的凭据随脚本保存并对管理员可见；既有 (event, channel, send) 脚本兼容保留。
+
+监控首页以 Host × 时间矩阵展示所有 Host，可切换最近 24 小时 / 最近 30 天。每格汇总该小时/天的检查：全成功为绿色，有任一次失败为红色，无记录为灰色；延迟取每轮最慢域名耗时后计算时段平均。日统计保留 30 天、小时统计保留 24 小时，每个周期保留一份代表性响应；点击时间格查看周期汇总。
+
+缺省监控设置现在对已发布、启用的代理 Host 自动生效：启动立即触发首批检查，每 5 秒调度、最多 4 个 Host 并发，默认每 60 秒检查。`Monitor.Configured: true` 表示显式选择，此时 `Enabled: false` 停止监控；旧配置中缺少 Configured 的默认关闭值升级为默认启用。仅静态/重定向且未指定监控 URL 的 Host 不自动探测不存在的代理。未指定 URL/Domain 时所有域名逐一检查（每 Host 最多 4 个并发）；任一域名失败则整轮失败，详情保留逐域名状态。指定 Domain 或独立 URL 时按该目标检查。通配域名须指定具体检查域名或 URL。
+
+默认监控不再将登录跳转 302 等 3xx 判为失败：`ExpectedStatus: 0` 允许 2xx/3xx；指定非零状态则精确匹配，同时仍执行内容/脚本检查。失败保存结构化分类：未注册、离线、注册中心不可用、超时、DNS/TLS、连接失败、状态/内容/脚本错误；界面直接显示分类。矩阵成功只显示平均 ms，失败只显示 ×，无记录显示 —。历史保留当时检查结果，规则变更后的新检查不改写旧统计。
+
+检查默认每 60 秒；页面 30 秒刷新、调度每 5 秒检查是否到期都不等于每 30/5 秒请求上游。一个单域名 Host 每天约 1440 次检查，7 个约 10080 次。监控详情在 Redis 使用 Hash 的近期槽（10 个近期槽、停写后 30 天 TTL），小时统计使用 Redis Hash 按小时增量更新（30 个日桶 + 24 个小时桶、30 天 TTL），每次仅更新当天、当前小时及一个近期槽，避免反复重写整月数据及放大 Redis 持久化日志；单机使用同样结构，文件读取上限 4 MiB。单个近期槽上限 40 KiB，正常单域名记录远小于此。保存状态、分类、耗时、通知结果及有界的代表性响应。探测专用日志器设为 CLOSE，避免反复写普通错误堆栈；上游自己的访问日志仍由各应用日志策略管理。
+
+普通 Gateway 日志按配置的 SplitTag 分文件。新增 `LogRetentionDays`（默认 30，1–3650）：启动和每 24 小时只清理当前应用配置的日志基名、日期格式所匹配的到期文件，保留正在写的文件、其他应用日志及备份；不切割的单文件、远程日志输出不做清理。Docker 标准输出另按部署日志轮转策略保留。`PruneGatewayLogs` 可用于独立验证此清理边界。
+
+## 当前监控存储布局
+
+每个 Host 使用一个 Redis Hash：`<Prefix>:monitor:<HostID>`，例如 `gateway:monitor:abc123`。
+
+| Field | 保留数量 | Value |
+| --- | ---: | --- |
+| `d:20261015` | 最近 30 天 | `{total,times,error,errors,legacyErrors,output}` |
+| `h:2026101510` | 最近 24 小时 | `{total,times,error,errors,legacyErrors,output}` |
+| `r:00` … `r:09` | 最近 10 轮 | 最近检查及连续失败数、告警/恢复发送状态 |
+
+`total` 是累计耗时毫秒，`times` 是检查轮数，平均延迟为 `total / times`。`error` 为空表示时段全成功；只要出现失败即保留最近失败原因，不被后续成功清空。日期按服务器时区（开发环境 Asia/Shanghai）划分。每个 Hash 最多 64 个 field，无元数据额外 field；Hash 停止更新 30 天后整体过期。跨节点租约是独立短期锁，不计入统计 field。
+
+每分钟检查一次，近期槽不额外产生半分钟请求。连续失败数保存在最新检查，超过 10 次的阈值仍正确；告警去重、重复提醒、恢复、勿扰状态保留并支持重启。Lua 原子更新当日、当前小时与近期槽并删除过期桶；正常写入只发送当前样本，不发送整个月数据。单机模式使用同样 64 槽结构的文件。
+
+旧 720 小时数据迁移时折算 30 个日桶，只留最近 24 个小时桶与最近 10 条检查；成功提交后清理旧 List/统计键或文件。旧历史失败仍保留其当时判定。每周期仅保留汇总和一份代表性响应，旧周期未保存的正文和完整失败计数明确标注。
+
+Hosts 与监控统一按添加时间升序；旧记录从保留的发布历史和管理日志推导，缺失时以 ID 稳定排序。

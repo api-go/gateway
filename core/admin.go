@@ -114,14 +114,10 @@ func (m *Manager) login(writer http.ResponseWriter, request *http.Request) {
 	}
 	token := encoding.Hex(safe.MakeSafeToken(32))
 	session := adminSession{User: "admin", Hash: hash, CSRF: encoding.Hex(safe.MakeSafeToken(24)), Expires: time.Now().Add(8 * time.Hour)}
-	m.mu.Lock()
-	if len(m.sessions) >= 1000 {
-		m.mu.Unlock()
-		http.Error(writer, "session capacity exceeded", 503)
+	if err := m.storeAdminSession(token, session); err != nil {
+		http.Error(writer, "session store unavailable", 503)
 		return
 	}
-	m.sessions[token] = session
-	m.mu.Unlock()
 	http.SetCookie(writer, &http.Cookie{Name: "gateway-admin", Value: token, HttpOnly: true, Secure: request.TLS != nil, SameSite: http.SameSiteStrictMode, Path: "/", MaxAge: 28800})
 	writeJSON(writer, 200, map[string]any{"csrf": session.CSRF})
 }
@@ -130,16 +126,14 @@ func (m *Manager) authenticate(request *http.Request) (adminSession, bool) {
 	if err != nil {
 		return adminSession{}, false
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	session, exists := m.sessions[cookie.Value]
-	if !exists || time.Now().After(session.Expires) {
-		delete(m.sessions, cookie.Value)
+	session, err := m.readAdminSession(cookie.Value)
+	if err != nil || time.Now().After(session.Expires) {
+		m.deleteAdminSession(cookie.Value)
 		return adminSession{}, false
 	}
 	hash, err := m.adminHash()
 	if err != nil || hash == "" || subtle.ConstantTimeCompare([]byte(hash), []byte(session.Hash)) != 1 {
-		delete(m.sessions, cookie.Value)
+		m.deleteAdminSession(cookie.Value)
 		return adminSession{}, false
 	}
 	return session, true
@@ -153,6 +147,10 @@ func (m *Manager) AdminHandler() http.Handler {
 		writer.Header().Set("X-Content-Type-Options", "nosniff")
 		writer.Header().Set("X-Frame-Options", "DENY")
 		writer.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+		if strings.HasPrefix(request.URL.Path, "/api/v1/") {
+			m.handleMachineAPI(writer, request)
+			return
+		}
 		if !strings.HasPrefix(request.URL.Path, "/api/") {
 			static.ServeHTTP(writer, request)
 			return
@@ -175,6 +173,9 @@ func (m *Manager) AdminHandler() http.Handler {
 
 		}
 		switch request.URL.Path {
+		case "/api/keys", "/api/keys/create", "/api/keys/revoke":
+			m.handleAPIKeys(writer, request, session.User)
+			return
 		case "/api/session":
 			if request.Method != "GET" {
 				http.Error(writer, "method not allowed", 405)
@@ -188,9 +189,10 @@ func (m *Manager) AdminHandler() http.Handler {
 				return
 			}
 			cookie, _ := request.Cookie("gateway-admin")
-			m.mu.Lock()
-			delete(m.sessions, cookie.Value)
-			m.mu.Unlock()
+			if err := m.deleteAdminSession(cookie.Value); err != nil {
+				http.Error(writer, "session store unavailable", 503)
+				return
+			}
 			http.SetCookie(writer, &http.Cookie{Name: "gateway-admin", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteStrictMode})
 			writeJSON(writer, 200, map[string]bool{"ok": true})
 			return
@@ -243,6 +245,46 @@ func (m *Manager) AdminHandler() http.Handler {
 			}
 			writer.Header().Set("Content-Disposition", "attachment; filename=gateway-hosts.json")
 			writeJSON(writer, 200, m.Hosts())
+			return
+		case "/api/registry":
+			if request.Method != "GET" {
+				http.Error(writer, "method not allowed", 405)
+				return
+			}
+			result, err := m.RegistryServices()
+			if err != nil {
+				http.Error(writer, "registry unavailable", 503)
+				return
+			}
+			writeJSON(writer, 200, result)
+			return
+		case "/api/monitor-status", "/api/monitor-history", "/api/monitor-matrix":
+			m.handleMonitor(writer, request)
+			return
+		case "/api/alerts/test":
+			m.handleAlertTest(writer, request)
+			return
+		case "/api/alerts", "/api/alerts/save", "/api/alerts/delete":
+			m.handleAlertChannels(writer, request, session.User)
+			return
+		case "/api/check-host":
+			if request.Method != "POST" {
+				http.Error(writer, "method not allowed", 405)
+				return
+			}
+			var input editInput
+			if err := readJSON(writer, request, &input); err != nil {
+				http.Error(writer, err.Error(), 400)
+				return
+			}
+			if err := m.CheckHost(input.Host); err != nil {
+				writeJSON(writer, 400, map[string]string{"error": err.Error()})
+				return
+			}
+			writeJSON(writer, 200, map[string]any{"valid": true})
+			return
+		case "/api/upstream-test":
+			m.handleUpstreamTest(writer, request)
 			return
 		case "/api/preview":
 			m.handlePreview(writer, request)

@@ -12,24 +12,26 @@ import (
 
 // Config configures the gateway and its optional separate management listener.
 type Config struct {
-	Redis           string
-	Prefix          string
-	DataDir         string
-	NodeID          string
-	AdminListen     string
-	AdminDisabled   bool // Management is enabled by default; true closes its listener.
-	ClientIP        service.ClientIPPolicy
-	ACMEEmail       string
-	ACMEDirectory   string // Empty selects Let's Encrypt production; tests should use staging.
-	ACMEAcceptTerms bool
-	CertificateKey  string // Optional explicit encryption key; automatic persistent management is the default.
-	HTTPSPort       int    // Public HTTPS redirect port; zero derives it from the TLS listener.
-	MaxRateKeys     int
+	Redis            string
+	Prefix           string
+	DataDir          string
+	NodeID           string
+	AdminListen      string
+	AdminDisabled    bool // Management is enabled by default; true closes its listener.
+	ClientIP         service.ClientIPPolicy
+	ACMEEmail        string
+	ACMEDirectory    string // Empty selects Let's Encrypt production; tests should use staging.
+	ACMEAcceptTerms  bool
+	CertificateKey   string // Optional explicit encryption key; automatic persistent management is the default.
+	HTTPSPort        int    // Public HTTPS redirect port; zero derives it from the TLS listener.
+	MaxRateKeys      int
+	LogRetentionDays int // 0 defaults to 30; application dated log files only.
 }
 
 var GatewayConf = Config{Prefix: "gateway", DataDir: "data/gateway", ClientIP: service.ClientIPPolicy{Mode: "direct"}, MaxRateKeys: 100000}
 
 type Host struct {
+	Monitor  MonitorConfig
 	ID       string
 	Name     string
 	Domains  []string
@@ -70,6 +72,7 @@ type LimitRule struct {
 	Missing       string // shared (default), ip, reject
 }
 type HostRecord struct {
+	CreatedAt       time.Time
 	DomainTLS       []DomainTLSStatus
 	CertificateInfo CertificateInfo
 	Revision        int64
@@ -95,12 +98,14 @@ type Event struct {
 	Version int64
 }
 type State struct {
-	Format       int
-	Revision     int64
-	Certificates map[string]CertificateRecord
-	ACME         *ACMESettings
-	Hosts        map[string]HostRecord
-	Events       []Event
+	AlertChannels map[string]AlertChannel
+	APIKeys       map[string]APIKey
+	Format        int
+	Revision      int64
+	Certificates  map[string]CertificateRecord
+	ACME          *ACMESettings
+	Hosts         map[string]HostRecord
+	Events        []Event
 }
 type NodeStatus struct {
 	ID       string
@@ -138,6 +143,9 @@ func validDomain(domain string) bool {
 	return true
 }
 func validateHost(host Host) error {
+	if err := validateMonitor(host.Monitor); err != nil {
+		return err
+	}
 	if host.ID == "" || len(host.ID) > 80 || strings.ContainsAny(host.ID, "/:* \t\r\n") {
 		return fmt.Errorf("invalid Host ID")
 	}

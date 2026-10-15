@@ -1,0 +1,49 @@
+package gateway
+
+import (
+	"fmt"
+	"time"
+	_ "time/tzdata"
+)
+
+func validateAlertSchedule(channel *AlertChannel) error {
+	if channel.RepeatSeconds != 0 && (channel.RepeatSeconds < 60 || channel.RepeatSeconds > 604800) {
+		return fmt.Errorf("重复提醒须为 0 或 60–604800 秒")
+	}
+	if channel.Timezone == "" {
+		channel.Timezone = "Asia/Shanghai"
+	}
+	if _, err := time.LoadLocation(channel.Timezone); err != nil {
+		return fmt.Errorf("时区无效")
+	}
+	if channel.QuietStart == "" && channel.QuietEnd == "" {
+		return nil
+	}
+	for _, s := range []string{channel.QuietStart, channel.QuietEnd} {
+		if _, err := time.Parse("15:04", s); err != nil {
+			return fmt.Errorf("勿扰时段须完整填写 HH:MM")
+		}
+	}
+	if channel.QuietStart == channel.QuietEnd {
+		return fmt.Errorf("勿扰开始和结束时间不能相同")
+	}
+	return nil
+}
+func alertQuiet(channel AlertChannel, now time.Time) bool {
+	if channel.QuietStart == "" || channel.QuietEnd == "" {
+		return false
+	}
+	zone := channel.Timezone
+	if zone == "" {
+		zone = "Asia/Shanghai"
+	}
+	loc, err := time.LoadLocation(zone)
+	if err != nil {
+		return false
+	}
+	clock := now.In(loc).Format("15:04")
+	if channel.QuietStart < channel.QuietEnd {
+		return clock >= channel.QuietStart && clock < channel.QuietEnd
+	}
+	return clock >= channel.QuietStart || clock < channel.QuietEnd
+}

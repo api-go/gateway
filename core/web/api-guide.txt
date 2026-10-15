@@ -1,0 +1,54 @@
+Gateway 管理 API v1
+
+BASE 为读取此文档的协议和主机地址，例如 http://192.168.1.10:81。
+程序必须能访问该管理地址；跨不可信网络通过 HTTPS 受控入口连接。
+在后台“API 接入”创建 Key，只显示一次；通过凭据存储配置。
+请求头 Authorization: Bearer <API_KEY>。不要放入 URL、文档或日志。
+无需 Cookie 或 CSRF；此 Key 用于管理网关，不用于业务请求认证。
+
+权限 read：读取；draft：草稿/预览；publish：发布/回滚；delete：删除。
+Host 按 ID 精确授权；* 表示全部，包括新 Host。
+POST 请求使用 Content-Type: application/json。
+
+GET /api/v1/hosts 返回已授权 HostRecord 数组，含 draft/current/revision/version/history。
+GET /api/v1/nodes 返回在线节点状态，versions 仅含已授权 Host。
+POST /api/v1/draft {"host":完整Host,"revision":当前Host修订号}
+POST /api/v1/preview {"host":完整Host,"domain":"api.example.com","path":"/health","method":"GET"}
+POST /api/v1/publish {"host":{"id":"example"},"revision":当前Host修订号}
+POST /api/v1/rollback {"host":{"id":"example"},"revision":当前Host修订号,"version":历史版本号}
+POST /api/v1/delete {"host":{"id":"example"},"revision":当前Host修订号}
+
+Host 字段 id、domains（数组）、enabled、https、proxies、rewrites、statics、limits。
+名称由域名生成。https.mode=adaptive 自动匹配后台证书库，off 为 HTTP。
+代理 path=/* 匹配整站，/ 仅首页；to 为发现服务名或完整 http(s) URL。
+静态路径相对于网关工作目录。保存为完整替换，编辑时保留其他配置字段。
+Key 不能管理其他 Key、管理员密码或证书库；证书在后台维护。
+
+流程：
+1. GET hosts，读目标的 draft、revision；新 ID 使用 revision=0。
+2. POST draft，保存不影响流量；记录响应 revision。
+3. POST preview 验证规则；不转发真实请求、不消耗额度。
+4. POST publish 使用保存响应 revision，记录返回 version。
+5. GET nodes 核对在线节点 versions[HostID] 达到目标 version。
+发布成功表示控制状态已提交，不能据此断言全部节点已切换。
+修改前重新读取；409 时核对最新内容后再保存，不盲目覆盖。
+连接中断时先读取核实是否已提交，再决定是否重试。
+
+示例（BASE、GATEWAY_API_KEY 由执行环境配置）：
+curl -fsS "$BASE/api/v1/hosts" -H "Authorization: Bearer $GATEWAY_API_KEY"
+curl -fsS "$BASE/api/v1/draft" -H "Authorization: Bearer $GATEWAY_API_KEY" \
+ -H 'Content-Type: application/json' \
+ --data '{"revision":0,"host":{"id":"example","domains":["api.example.com"],"enabled":true,"https":{"mode":"adaptive"},"proxies":[{"path":"/*","to":"http://127.0.0.1:8080/","authLevel":0}]}}'
+curl -fsS "$BASE/api/v1/preview" -H "Authorization: Bearer $GATEWAY_API_KEY" \
+ -H 'Content-Type: application/json' \
+ --data '{"host":{"id":"example","domains":["api.example.com"],"enabled":true,"https":{"mode":"adaptive"},"proxies":[{"path":"/*","to":"http://127.0.0.1:8080/"}]},"domain":"api.example.com","path":"/health","method":"GET"}'
+下例 revision=1 必须替换为保存响应中的实际 revision：
+curl -fsS "$BASE/api/v1/publish" -H "Authorization: Bearer $GATEWAY_API_KEY" \
+ -H 'Content-Type: application/json' --data '{"host":{"id":"example"},"revision":1}'
+curl -fsS "$BASE/api/v1/nodes" -H "Authorization: Bearer $GATEWAY_API_KEY"
+
+200 成功；400 请求/配置错误；401 Key 无效、到期、撤销或凭据存储不可用；
+403 无操作/Host 权限；404 未知接口；405 方法不支持；409 revision 冲突；503 存储失败。
+错误可能为纯文本或 JSON {"error":"..."}。
+凭据摘要和元数据使用单机/Redis 权威状态；不返回摘要。
+Redis 不可用时拒绝 Key 鉴权。撤销不取消已通过鉴权的在途请求。

@@ -31,6 +31,15 @@ func (m *Manager) automaticCertificateKey() ([]byte, error) {
 	if m.rd == nil {
 		if local == nil {
 			local = safe.MakeSafeToken(32)
+			if file.Exists(filepath.Join(m.config.DataDir, "state.json")) {
+				raw, err := file.ReadBytes(filepath.Join(m.config.DataDir, "state.json"))
+				if err != nil {
+					return nil, err
+				}
+				if err := validateCertificateStateKey(raw, local); err != nil {
+					return nil, err
+				}
+			}
 			if err := privateWrite(name, local); err != nil {
 				return nil, err
 			}
@@ -112,9 +121,14 @@ func validateCertificateStateKey(raw, key []byte) error {
 		plain, err := goCrypto.AESGCM.Decrypt(encrypted[12:], key, encrypted[:12])
 		safe.ZeroMemory(plain)
 		if err != nil {
-			return fmt.Errorf("existing certificates require their original encryption key; retain the previous CertificateKey or GATEWAY_CERTIFICATE_KEY")
+			return fmt.Errorf("existing encrypted credentials require their original encryption key; retain the previous CertificateKey or GATEWAY_CERTIFICATE_KEY")
 		}
 		return nil
+	}
+	for _, channel := range state.AlertChannels {
+		if err := check(channel.SealedCredentials); err != nil {
+			return err
+		}
 	}
 	for _, entry := range state.Certificates {
 		if err := check(entry.SealedKey); err != nil {
@@ -122,15 +136,24 @@ func validateCertificateStateKey(raw, key []byte) error {
 		}
 	}
 	for _, record := range state.Hosts {
+		if err := check(record.Draft.Monitor.SealedHeaders); err != nil {
+			return err
+		}
 		if err := check(record.Draft.HTTPS.SealedKey); err != nil {
 			return err
 		}
 		if record.Current != nil {
+			if err := check(record.Current.Monitor.SealedHeaders); err != nil {
+				return err
+			}
 			if err := check(record.Current.HTTPS.SealedKey); err != nil {
 				return err
 			}
 		}
 		for _, version := range record.History {
+			if err := check(version.Host.Monitor.SealedHeaders); err != nil {
+				return err
+			}
 			if err := check(version.Host.HTTPS.SealedKey); err != nil {
 				return err
 			}

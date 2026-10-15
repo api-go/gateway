@@ -3,6 +3,7 @@ package gateway
 import (
 	"apigo.cc/go/cast"
 	goCrypto "apigo.cc/go/crypto"
+	"apigo.cc/go/discover"
 	"apigo.cc/go/encoding"
 	"apigo.cc/go/file"
 	"apigo.cc/go/log"
@@ -31,7 +32,18 @@ const stateCAS = `local current=redis.call('GET',KEYS[1]) or ''; if current~=ARG
 
 type activeHosts struct{ hosts map[string]HostRecord }
 type Manager struct {
-	certificateJobs map[string]bool
+	monitorAttempts      map[string]monitorAttempt
+	monitorLatest        map[string]MonitorSample
+	registryName         string
+	registryCalls        map[string]string
+	registrySelf         string
+	registrySelfProtocol string
+	registryProtocols    map[string]string
+	monitorMu            sync.Mutex
+	monitorCursor        int
+	manualChecks         map[string]MonitorSample
+	monitorJobs          map[string]bool
+	certificateJobs      map[string]bool
 
 	mu              sync.Mutex
 	eventMu         sync.Mutex
@@ -50,7 +62,8 @@ type Manager struct {
 	key             *safe.SafeBuf
 	transientEvents []Event
 	sharedKey       bool
-	sessions        map[string]adminSession
+	keyUsage        map[string]time.Time
+	adminSessionMu  sync.Mutex
 	loginLimiter    *Limiter
 	acme            atomic.Pointer[certificateManager]
 	certificates    atomic.Pointer[certificatePool]
@@ -68,6 +81,12 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 	}
 	if config.Prefix == "" {
 		config.Prefix = "gateway"
+	}
+	if config.LogRetentionDays == 0 {
+		config.LogRetentionDays = 30
+	}
+	if config.LogRetentionDays < 1 || config.LogRetentionDays > 3650 {
+		return nil, fmt.Errorf("LogRetentionDays requires 1–3650")
 	}
 	if config.DataDir == "" {
 		config.DataDir = "data/gateway"
@@ -88,10 +107,19 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 	if err := os.Chmod(config.DataDir, 0700); err != nil {
 		return nil, err
 	}
-	m := &Manager{config: config, server: server, state: State{Format: 1, Hosts: map[string]HostRecord{}}, sessions: map[string]adminSession{}, applied: -1, status: NodeStatus{ID: config.NodeID, Versions: map[string]int64{}}}
+	m := &Manager{config: config, server: server, state: State{Format: 1, Hosts: map[string]HostRecord{}}, applied: -1, status: NodeStatus{ID: config.NodeID, Versions: map[string]int64{}}}
 	if config.Redis != "" {
 		m.rd = redis.GetRedis(config.Redis, log.DefaultLogger)
 
+	}
+	m.captureRegistryLocked()
+	m.registryCalls = map[string]string{}
+	for name, call := range discover.Config.Calls {
+		m.registryCalls[name] = call
+	}
+	m.registryName = server.Config.Register
+	if m.registryName == "" {
+		m.registryName = discover.Config.Registry
 	}
 	m.limiter = NewLimiter(config.MaxRateKeys, m.rd, config.Prefix)
 	m.loginLimiter = NewLimiter(10000, nil, "login")
@@ -135,6 +163,11 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 				err = nil
 			}
 		}
+	}
+	if err == nil {
+		plain := m.key.Open()
+		err = validateCertificateStateKey([]byte(m.raw), plain.Data)
+		plain.Close()
 	}
 	if err == nil {
 		err = m.applyLocked()
@@ -474,10 +507,19 @@ func (m *Manager) SaveDraft(host Host, expected int64, actor string) (HostRecord
 	if host.HTTPS.SealedKey == "" {
 		host.HTTPS.SealedKey = record.Draft.HTTPS.SealedKey
 	}
+	if err := m.prepareMonitorSecrets(&host, record.Draft); err != nil {
+		return HostRecord{}, err
+	}
 	if err := validateHost(host); err != nil {
 		return HostRecord{}, err
 	}
 	next := cloneState(m.state)
+	if record.CreatedAt.IsZero() {
+		record.CreatedAt = hostAddedAt(record, m.state.Events)
+		if record.CreatedAt.IsZero() {
+			record.CreatedAt = time.Now()
+		}
+	}
 	record.Revision++
 	record.Draft = host
 	next.Hosts[host.ID] = record
@@ -500,34 +542,10 @@ func (m *Manager) Publish(id string, expected int64, actor string) (HostRecord, 
 	if record.Revision != expected {
 		return HostRecord{}, ErrConflict
 	}
-	if record.Draft.Enabled && record.Draft.HTTPS.Mode == "upload" {
-		block, _ := pem.Decode([]byte(record.Draft.HTTPS.Certificate))
-		if block == nil {
-			return HostRecord{}, fmt.Errorf("invalid certificate PEM")
-		}
-		leaf, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			return HostRecord{}, err
-		}
-		if !time.Now().Before(leaf.NotAfter) || time.Now().Before(leaf.NotBefore) {
-			return HostRecord{}, fmt.Errorf("certificate is not currently valid")
-		}
-	}
-	if _, err := m.prepareHost(record.Draft, record.Version+1); err != nil {
+	if err := m.validatePublicationLocked(record.Draft, record.Version+1); err != nil {
 		return HostRecord{}, err
 	}
-	for otherID, other := range m.state.Hosts {
-		if otherID == id || other.Current == nil {
-			continue
-		}
-		for _, domain := range other.Current.Domains {
-			for _, newDomain := range record.Draft.Domains {
-				if domain == newDomain {
-					return HostRecord{}, fmt.Errorf("domain %s already published by %s", domain, otherID)
-				}
-			}
-		}
-	}
+
 	next := cloneState(m.state)
 	record.Revision++
 	record.Version++
@@ -603,7 +621,14 @@ func (m *Manager) Delete(id string, expected int64, actor string) error {
 	m.ackLocked()
 	return nil
 }
-func redactHost(host Host) Host { host.HTTPS.SealedKey = ""; return host }
+func redactHost(host Host) Host {
+	host.HTTPS.SealedKey = ""
+	host.Monitor.HasHeaders = host.Monitor.SealedHeaders != ""
+	host.Monitor.SealedHeaders = ""
+	host.Monitor.Headers = nil
+	host.Monitor.ClearHeaders = false
+	return host
+}
 func redactRecord(record HostRecord) HostRecord {
 	data, _ := cast.ToJSONBytes(record)
 	record, _ = cast.FromJSON[HostRecord](data)
@@ -624,11 +649,17 @@ func (m *Manager) Hosts() []HostRecord {
 	records := make([]HostRecord, 0, len(m.state.Hosts))
 	for _, record := range m.state.Hosts {
 		view := redactRecord(record)
+		view.CreatedAt = hostAddedAt(record, m.state.Events)
 		view.CertificateInfo = m.certificateInfoLocked(record)
 		view.DomainTLS = m.domainTLSLocked(record)
 		records = append(records, view)
 	}
-	sort.Slice(records, func(i, j int) bool { return records[i].Draft.ID < records[j].Draft.ID })
+	sort.Slice(records, func(i, j int) bool {
+		if !records[i].CreatedAt.Equal(records[j].CreatedAt) {
+			return records[i].CreatedAt.Before(records[j].CreatedAt)
+		}
+		return records[i].Draft.ID < records[j].Draft.ID
+	})
 	return records
 }
 func (m *Manager) Events() []Event {
@@ -661,11 +692,6 @@ func (m *Manager) Reconcile() error {
 	m.ackLocked()
 	m.limiter.Sweep(time.Now())
 	m.loginLimiter.Sweep(time.Now())
-	for id, session := range m.sessions {
-		if time.Now().After(session.Expires) {
-			delete(m.sessions, id)
-		}
-	}
 	return err
 }
 func (m *Manager) Nodes() []NodeStatus {
@@ -761,6 +787,90 @@ func (m *Manager) SetCertificate(id string, expected int64, certificate string, 
 }
 func (m *Manager) Settings() map[string]any {
 	settings, _ := m.ACMESettings()
-	return map[string]any{"nodeID": m.config.NodeID, "clientIP": m.config.ClientIP, "cluster": m.rd != nil, "sharedCertificateKey": m.sharedKey, "adminListen": m.config.AdminListen, "adminDisabled": m.config.AdminDisabled, "acmeEmail": settings.Email, "acmeAcceptTerms": settings.AcceptTerms, "acmeDirectory": settings.Directory, "rateAlgorithm": "first-request fixed window", "listen": m.server.Config.Listen}
+	return map[string]any{"logRetentionDays": m.config.LogRetentionDays, "nodeID": m.config.NodeID, "clientIP": m.config.ClientIP, "cluster": m.rd != nil, "sharedCertificateKey": m.sharedKey, "adminListen": m.config.AdminListen, "adminDisabled": m.config.AdminDisabled, "acmeEmail": settings.Email, "acmeAcceptTerms": settings.AcceptTerms, "acmeDirectory": settings.Directory, "rateAlgorithm": "first-request fixed window", "listen": m.server.Config.Listen}
 }
 func (m *Manager) Handler() http.Handler { return m.server.Handler() }
+
+// CheckHost validates an editable draft against the same publication checks, without saving or contacting upstreams.
+func (m *Manager) CheckHost(host Host) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if err := m.loadLocked(); err != nil {
+		return err
+	}
+	record := m.state.Hosts[host.ID]
+	if host.HTTPS.SealedKey == "" {
+		host.HTTPS.SealedKey = record.Draft.HTTPS.SealedKey
+	}
+	if host.Monitor.SealedHeaders == "" && host.Monitor.Headers == nil && !host.Monitor.ClearHeaders {
+		host.Monitor.SealedHeaders = record.Draft.Monitor.SealedHeaders
+	}
+	if err := validateHost(host); err != nil {
+		return err
+	}
+	return m.validatePublicationLocked(host, record.Version+1)
+}
+func (m *Manager) validatePublicationLocked(host Host, version int64) error {
+	for _, id := range host.Monitor.ChannelIDs {
+		if _, ok := m.state.AlertChannels[id]; !ok {
+			return fmt.Errorf("监控报警通道不存在：%s", id)
+		}
+	}
+	if host.Monitor.Enabled && host.Monitor.Configured {
+		if input, err := m.monitorInput(host); err != nil {
+			return fmt.Errorf("监控设置：%w", err)
+		} else if host.Monitor.URL == "" && host.Enabled {
+			preview, err := m.Preview(input)
+			if err != nil || preview.Type != "proxy" {
+				return fmt.Errorf("监控路径未匹配代理，请填写监控地址或调整路径")
+			}
+		}
+	}
+	if host.Enabled && host.HTTPS.Mode == "upload" {
+		block, _ := pem.Decode([]byte(host.HTTPS.Certificate))
+		if block == nil {
+			return fmt.Errorf("invalid certificate PEM")
+		}
+		leaf, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return err
+		}
+		if !time.Now().Before(leaf.NotAfter) || time.Now().Before(leaf.NotBefore) {
+			return fmt.Errorf("certificate is not currently valid")
+		}
+	}
+	if _, err := m.prepareHost(host, version); err != nil {
+		return err
+	}
+	for otherID, other := range m.state.Hosts {
+		if otherID == host.ID || other.Current == nil {
+			continue
+		}
+		for _, domain := range other.Current.Domains {
+			for _, newDomain := range host.Domains {
+				if domain == newDomain {
+					return fmt.Errorf("域名 %s 已由 Host %s（ID: %s）发布；请编辑该已发布 Host，或先从其配置中移除此域名", domain, other.Current.Name, otherID)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func hostAddedAt(record HostRecord, events []Event) time.Time {
+	stamp := record.CreatedAt
+	if !stamp.IsZero() {
+		return stamp
+	}
+	for _, version := range record.History {
+		if stamp.IsZero() || version.Time.Before(stamp) {
+			stamp = version.Time
+		}
+	}
+	for _, event := range events {
+		if event.HostID == record.Draft.ID && (stamp.IsZero() || event.Time.Before(stamp)) {
+			stamp = event.Time
+		}
+	}
+	return stamp
+}
