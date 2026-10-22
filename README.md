@@ -8,7 +8,7 @@ Redis 通知订阅随 GatewayApp 启动与停止，管理配置和旧路由通�
 
 ## 启动
 
-`go.mod` 使用已发布 Service v1.5.47 的 WebSocket 代理实现，普通请求继续使用既有 HTTP/2 / H2C 配置，WebSocket 单独使用 HTTP/1.1。
+`go.mod` 使用已发布 Service v1.5.48 与 HTTP v1.5.14 的 WebSocket 代理实现，普通请求继续使用既有 HTTP/2 / H2C 配置，WebSocket 独立协商 HTTP/1.1 或 RFC 8441 HTTP/2。
 
 同时依赖 HTTP v1.5.13、Discover v1.5.17 的统一 Open 接口，发现代理可透传握手 Cookie 和拒绝响应。WebSocket 超时/消息限制/压缩设置在 `service.yaml` 的 `WebSocketProxy` 下；默认握手与写入 30 秒，空闲和消息大小限制关闭，压缩关闭。私有 CA / mTLS 可通过 Service 的代理客户端或独立 Dialer 配置。
 
@@ -354,3 +354,9 @@ Gateway 默认作为发现客户端，在 Service 启动后通过 Discover 原�
 Hosts 与监控统一按添加时间升序；旧记录从保留的发布历史和管理日志推导，缺失时以 ID 稳定排序。
 
 - 永久 API Key 同时识别标准零时刻和旧快照的无时区零时间；UTC、Asia/Shanghai、America/New_York 下持久化和重启后仍有效，有限到期时间保持校验。
+
+## HTTP/2 WebSocket（v1.5.20）
+
+Gateway 代理入口支持 RFC 8441；Go/x/net 的服务端声明仍需启动环境 `GODEBUG=http2xconnect=1`。上游默认自动选择：WSS 优先 H2，ALPN/SETTINGS 不支持时兼容 H1；普通 WS 直接 H1，显式注入 NewClientH2C 可使用 H2C。认证拒绝、证书错误、超时等不触发协议降级。不再增加 WebSocketProxy.HTTP2 配置。Service 默认代理客户端共享连接池与有界能力缓存，Cookie Jar 关闭；Stop 清理其空闲池。显式 SetProxyWebSocketDialer 保持 H1 网络策略。
+
+依赖已发布 HTTP v1.5.14 与 Service v1.5.48，独立发布验证使用 GOWORK=off。TLS 对照方法与原始数据见 http/testdata/websocket/20261022-tls-compare.md。

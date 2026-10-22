@@ -115,3 +115,9 @@ See [TEST.md](TEST.md) for test coverage, benchmarks and environment limits. Red
 - Permanent API keys recognize both the zero instant and legacy timezone-free zero wall-clock after persistence and restart; finite expirations remain enforced across UTC, Asia/Shanghai and America/New_York.
 
 Established WebSocket tunnels and in-flight HTTP/SSE streams are not moved by table updates. Later requests on the same HTTP/2 connection still select from the current table. Shared shards do not guarantee zero session movement; use automatic per-key mappings when that is required, within their TTL, capacity, and failure limits.
+
+## HTTP/2 WebSocket (v1.5.20)
+
+Ingress supports RFC 8441 when the process starts with GODEBUG=http2xconnect=1 (required by Go/x/net). Upstream automatically prefers H2 for WSS, falling back only when ALPN/SETTINGS lack support. Plain WS stays on H1 unless H2C is explicitly configured. No WebSocketProxy.HTTP2 switch is required. HTTP rejections, certificate failures and timeouts do not trigger fallback. Independent Gorilla proxy dialers preserve their H1 network policy. Default proxy clients share H2 pools and bounded capability caches, without a shared cookie jar; Stop cleans idle default pools.
+
+Depends on published HTTP v1.5.14 and Service v1.5.48; standalone checks run with GOWORK=off. TLS measurements and raw results: http/testdata/websocket/20261022-tls-compare.md.

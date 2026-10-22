@@ -320,3 +320,15 @@ BenchmarkPublishedHostQuota-16    	  221820	      5252 ns/op	    3633 B/op	     
 监控周期详情：每周期累计检查次数、耗时、失败次数，仅保存一份响应（存在失败保留最近失败，否则最后成功），正文上限 4096 字节。旧周期未记录的失败次数/响应明确标注；近期 10 槽用于连续失败和报警状态。Hosts 与监控按添加时间升序，旧 Host 从历史/管理日志推导，缺失时以 ID 稳定排序。
 
 - TestPermanentAPIKeySurvivesShanghaiPersistence：独立上海时区子进程覆盖永久Key持久化、重启和认证；同时运行有限过期与撤销回归。
+
+## v1.5.20 HTTP/2 WebSocket 发布验证（2026-10-23）
+
+依赖已发布 HTTP v1.5.14 与 Service v1.5.48；独立发布验证使用 GOWORK=off，不使用相邻模块源码。
+
+真实 TLS 集成覆盖默认自动 H2→H1/H2（无需应用协议开关）、旧 TLS 后端 ALPN 回退、H1 客户端兼容、多流与普通请求复用同一 TCP、关闭单流、发布新路由后旧隧道持续工作与后续请求使用新路由。认证/证书错误不触发协议降级。Go 的入口声明仍需启动环境 GODEBUG=http2xconnect=1。
+
+2026-10-22 / Apple M3 Max 本轮基准：APIKeyRead 35792 ns/op，PublishedHostQuota 4962 ns/op，MonitorCheck 6043671 ns/op。H1/H2 TLS 对照方法与三轮原始结果位于相邻 http/testdata/websocket/20261022-tls-compare.md；客户端性能不能直接当作网关全链路性能。
+
+2026-10-23 独立发布检查：`GOWORK=off GATEWAY_REDIS_INTEGRATION=1`，默认和启动 `GODEBUG=http2xconnect=1` 两种模式的全量 test-v/count1、vet、race/count1、benchmark 均通过。使用现有 Redis 的隔离测试前缀，既有服务前后 PONG，未启停用户 Redis。H2 模式实际执行 `TestGatewayWebSocketHTTP2TLS/h2-h1` 与 `h2-h2`；默认模式跳过该需启动声明的专项，既有 H1 回归仍执行。独立进程可靠性大矩阵及主动 Redis 进程故障测试未启用，不计入本次覆盖。
+
+`ai/tools/getExports` 不可用，以 `GOWORK=off go doc -all ./core` 与导出源码核对；本版本无新增或移除 Go API。Apple M3 Max 本次 APIKeyRead / PublishedHostQuota / MonitorCheck：默认 35852 / 4711 / 6446051 ns/op，H2 启动模式 39653 / 5253 / 5097200 ns/op；此基准不构成 H1/H2 网关吞吐对照。
