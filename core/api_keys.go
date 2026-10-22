@@ -73,7 +73,7 @@ func (m *Manager) handleAPIKeys(w http.ResponseWriter, r *http.Request, actor st
 	var entry APIKey
 	switch r.URL.Path {
 	case "/api/keys/create":
-		if len(next.APIKeys) >= 100 || strings.TrimSpace(input.Name) == "" || len(input.Name) > 100 || len(input.Permissions) == 0 || len(input.Permissions) > 4 || len(input.HostIDs) == 0 || len(input.HostIDs) > 100 || (!input.Expires.IsZero() && !input.Expires.After(time.Now())) {
+		if len(next.APIKeys) >= 100 || strings.TrimSpace(input.Name) == "" || len(input.Name) > 100 || len(input.Permissions) == 0 || len(input.Permissions) > 4 || len(input.HostIDs) == 0 || len(input.HostIDs) > 100 || (apiKeyHasExpiry(input.Expires) && !input.Expires.After(time.Now())) {
 			http.Error(w, "invalid API key settings", 400)
 			return
 		}
@@ -147,7 +147,7 @@ func (m *Manager) machineKey(r *http.Request) (APIKey, error) {
 	raw := []byte(token)
 	defer safe.ZeroMemory(raw)
 	hash := goCrypto.SHA256ToHex(raw)
-	if !exists || subtle.ConstantTimeCompare([]byte(hash), []byte(key.Hash)) != 1 || (!key.Expires.IsZero() && !time.Now().Before(key.Expires)) {
+	if !exists || subtle.ConstantTimeCompare([]byte(hash), []byte(key.Hash)) != 1 || (apiKeyHasExpiry(key.Expires) && !time.Now().Before(key.Expires)) {
 		return APIKey{}, fmt.Errorf("invalid API key")
 	}
 	if m.keyUsage == nil {
@@ -265,4 +265,12 @@ func (m *Manager) handleMachineAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, result)
+}
+
+// Legacy cast snapshots store zero times without an offset. Parsing in a local
+// timezone gives that sentinel a historical offset, so time.Time.IsZero alone
+// incorrectly expires permanent keys. Both a zero instant and the legacy exact
+// zero wall-clock mean unset; genuine nonzero expiry times remain effective.
+func apiKeyHasExpiry(t time.Time) bool {
+	return !t.IsZero() && !(t.Year() == 1 && t.Month() == time.January && t.Day() == 1 && t.Hour() == 0 && t.Minute() == 0 && t.Second() == 0 && t.Nanosecond() == 0)
 }

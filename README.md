@@ -2,15 +2,15 @@
 
 [English](README.en.md)
 
-基于 `apigo.cc/go/service` 的动态网关。**v1.5.17** 提供管理后台、独立限流与集中证书管理，依赖已发布的 Service v1.5.46、Discover v1.5.17、API v1.5.19、JS v1.5.17。此处以实际实现为准。
+基于 `apigo.cc/go/service` 的动态网关。**v1.5.18** 提供管理后台、独立限流与集中证书管理，依赖已发布的 Service v1.5.47、Discover v1.5.17、API v1.5.20、JS v1.5.17。此处以实际实现为准。
 
 Redis 通知订阅随 GatewayApp 启动与停止，管理配置和旧路由通知及时生效。
 
 ## 启动
 
-`go.mod` 使用已发布 Service v1.5.46 的 WebSocket 代理实现，普通请求继续使用既有 HTTP/2 / H2C 配置，WebSocket 单独使用 HTTP/1.1。
+`go.mod` 使用已发布 Service v1.5.47 的 WebSocket 代理实现，普通请求继续使用既有 HTTP/2 / H2C 配置，WebSocket 单独使用 HTTP/1.1。
 
-同时依赖 HTTP v1.5.12、Discover v1.5.17 的统一 Open 接口，发现代理可透传握手 Cookie 和拒绝响应。WebSocket 超时/消息限制/压缩设置在 `service.yaml` 的 `WebSocketProxy` 下；默认握手与写入 30 秒，空闲和消息大小限制关闭，压缩关闭。私有 CA / mTLS 可通过 Service 的代理客户端或独立 Dialer 配置。
+同时依赖 HTTP v1.5.13、Discover v1.5.17 的统一 Open 接口，发现代理可透传握手 Cookie 和拒绝响应。WebSocket 超时/消息限制/压缩设置在 `service.yaml` 的 `WebSocketProxy` 下；默认握手与写入 30 秒，空闲和消息大小限制关闭，压缩关闭。私有 CA / mTLS 可通过 Service 的代理客户端或独立 Dialer 配置。
 
 ```sh
 go build -o gateway .
@@ -44,7 +44,7 @@ gateway:
 
 `AdminDisabled: true` 关闭后台监听；AdminListen 可覆盖地址或端口，包括 `127.0.0.1:81`。修改管理监听或开关后重启服务。独立管理监听使用 HTTP，可按需要经具有 HTTPS 的受控入口访问。低端口绑定要求取决于系统权限，无法绑定会报错，不会静默换端口。旧工作区的多账号数据不再用于登录，需要运行上述命令设置单一密码。
 
-发布版使用已发布的 Service v1.5.46 和 Discover v1.5.17，不含本地 replace；可在不保留相邻模块 checkout 的情况下独立编译。根目录 CLI 保持兼容，可复用的 Go API 位于 `apigo.cc/go/gateway/core`。
+发布版使用已发布的 Service v1.5.47 和 Discover v1.5.17，不含本地 replace；可在不保留相邻模块 checkout 的情况下独立编译。根目录 CLI 保持兼容，可复用的 Go API 位于 `apigo.cc/go/gateway/core`。
 
 ## API Key 程序接入（v1.5.17）
 
@@ -292,3 +292,5 @@ Gateway 默认作为发现客户端，在 Service 启动后通过 Discover 原�
 旧 720 小时数据迁移时折算 30 个日桶，只留最近 24 个小时桶与最近 10 条检查；成功提交后清理旧 List/统计键或文件。旧历史失败仍保留其当时判定。每周期仅保留汇总和一份代表性响应，旧周期未保存的正文和完整失败计数明确标注。
 
 Hosts 与监控统一按添加时间升序；旧记录从保留的发布历史和管理日志推导，缺失时以 ID 稳定排序。
+
+- 永久 API Key 同时识别标准零时刻和旧快照的无时区零时间；UTC、Asia/Shanghai、America/New_York 下持久化和重启后仍有效，有限到期时间保持校验。

@@ -1,5 +1,11 @@
 # Gateway 验证报告
 
+## v1.5.18 发布验证（2026-10-22）
+
+- 永久 Key：UTC、Asia/Shanghai、America/New_York 下使用当前序列化持久化及重启；旧无时区零时间兼容；真实过期、Host 范围、撤销和权限拒绝。
+- 从仅含认证补丁及已发布依赖的隔离源树执行 GOWORK=off 全量、race、vet、基准；使用现有本机 Redis 的隔离测试前缀。
+- 无新增导出 API；以 GOWORK=off go doc -all ./core 交叉核对，替代不可用的 ai/tools/getExports。
+
 ## v1.5.17 发布验证（2026-10-15）
 
 - 依赖审计：go.mod 所有 apigo.cc/go 直接和间接版本与已发布索引一致；GOWORK=off、无 replace，go mod tidy -diff 无变化。

@@ -3,19 +3,19 @@ module apigo.cc/go/gateway
 go 1.25.0
 
 require (
-	apigo.cc/go/api v1.5.19
+	apigo.cc/go/api v1.5.20
 	apigo.cc/go/cast v1.5.8
 	apigo.cc/go/config v1.5.8
 	apigo.cc/go/crypto v1.5.8
 	apigo.cc/go/discover v1.5.17
 	apigo.cc/go/encoding v1.5.8
 	apigo.cc/go/file v1.5.9
-	apigo.cc/go/http v1.5.12
+	apigo.cc/go/http v1.5.13
 	apigo.cc/go/js v1.5.17
 	apigo.cc/go/log v1.5.17
 	apigo.cc/go/redis v1.5.20
 	apigo.cc/go/safe v1.5.4
-	apigo.cc/go/service v1.5.46
+	apigo.cc/go/service v1.5.47
 	apigo.cc/go/shell v1.5.8
 	apigo.cc/go/starter v1.5.13
 	apigo.cc/go/task v1.5.14
@@ -33,6 +33,7 @@ require (
 	apigo.cc/go/watch v1.5.10 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/dop251/goja v0.0.0-20260311135729-065cd970411c // indirect
+	github.com/evanw/esbuild v0.28.2 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gobwas/glob v0.2.3 // indirect

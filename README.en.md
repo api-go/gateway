@@ -1,4 +1,4 @@
-# Gateway v1.5.17
+# Gateway v1.5.18
 
 [中文文档](README.md)
 
@@ -25,7 +25,7 @@ gateway:
     Mode: direct
 ```
 
-All dependencies are released versions: Service v1.5.46, Discover v1.5.17, HTTP v1.5.12, API v1.5.19 and JS v1.5.17. No local replacements are required.
+All dependencies are released versions: Service v1.5.47, Discover v1.5.17, HTTP v1.5.13, API v1.5.20 and JS v1.5.17. No local replacements are required.
 
 ## Management and program access
 
@@ -83,3 +83,5 @@ GOWORK=off GATEWAY_REDIS_INTEGRATION=1 go test -race ./...
 ```
 
 See [TEST.md](TEST.md) for test coverage, benchmarks and environment limits. Redis tests use isolated prefixes. Browser test fixtures are under `testdata/browser` and are not production runtime dependencies.
+
+- Permanent API keys recognize both the zero instant and legacy timezone-free zero wall-clock after persistence and restart; finite expirations remain enforced across UTC, Asia/Shanghai and America/New_York.

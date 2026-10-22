@@ -75,7 +75,7 @@ func TestAPIKeyLifecycleAndHostPermissions(t *testing.T) {
 	other := baseHost()
 	other.ID = "other"
 	if w := machineRequest(t, h, "/api/v1/draft", token, map[string]any{"host": other}); w.Code != 403 {
-		t.Fatal("Host scope bypass")
+		t.Fatalf("Host scope check: status=%d body=%s", w.Code, w.Body.String())
 	}
 	draft := machineRequest(t, h, "/api/v1/draft", token, map[string]any{"host": baseHost(), "revision": 0})
 	if draft.Code != 200 {
