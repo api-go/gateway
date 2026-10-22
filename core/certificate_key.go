@@ -60,6 +60,16 @@ func (m *Manager) automaticCertificateKey() ([]byte, error) {
 		if snapshot.Error != nil {
 			return nil, snapshot.Error
 		}
+		if snapshot.String() == "" && local != nil && file.Exists(filepath.Join(m.config.DataDir, "state.json")) {
+			backup, err := file.Read(filepath.Join(m.config.DataDir, "state.json"))
+			if err != nil {
+				return nil, err
+			}
+			if _, err = m.restoreSnapshot(backup, local); err != nil {
+				return nil, err
+			}
+			return m.automaticCertificateKey()
+		}
 		if local == nil {
 			local = safe.MakeSafeToken(32)
 		}
@@ -87,6 +97,17 @@ func (m *Manager) automaticCertificateKey() ([]byte, error) {
 	if err := validateCertificateStateKey(snapshot.Bytes(), raw); err != nil {
 		safe.ZeroMemory(raw)
 		return nil, err
+	}
+	if snapshot.String() == "" && file.Exists(filepath.Join(m.config.DataDir, "state.json")) {
+		backup, err := file.ReadBytes(filepath.Join(m.config.DataDir, "state.json"))
+		if err != nil {
+			safe.ZeroMemory(raw)
+			return nil, err
+		}
+		if err := validateCertificateStateKey(backup, raw); err != nil {
+			safe.ZeroMemory(raw)
+			return nil, err
+		}
 	}
 	if err := privateWrite(name, raw); err != nil {
 		safe.ZeroMemory(raw)

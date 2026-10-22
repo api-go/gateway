@@ -612,8 +612,8 @@ func TestClusterMissingStateRetainsCacheAcrossRestart(t *testing.T) {
 	host.Rewrites = []service.RewriteRule{{Path: "/", To: "https://retained.test/"}}
 	record := savePublish(t, first, host, 0)
 	rd.Do("DEL", prefix+":state")
-	if err := first.Reconcile(); err == nil {
-		t.Fatal("missing authoritative state was accepted")
+	if err := first.Reconcile(); err != nil {
+		t.Fatal("missing authoritative state was not restored", err)
 	}
 	second, err := gateway.NewManager(config, service.NewWebServer())
 	if err != nil {
@@ -626,9 +626,9 @@ func TestClusterMissingStateRetainsCacheAcrossRestart(t *testing.T) {
 		if response.Header().Get("Location") != "https://retained.test/" {
 			t.Fatalf("lost retained route: %d", response.Code)
 		}
-		if _, err := manager.SaveDraft(host, record.Revision, "test"); err == nil {
-			t.Fatal("write accepted without authoritative state")
-		}
+	}
+	if _, err := second.SaveDraft(host, record.Revision, "test"); err != nil {
+		t.Fatal("write rejected after recovery", err)
 	}
 }
 
@@ -664,8 +664,19 @@ func TestClusterAdministratorPasswordSharedAndReset(t *testing.T) {
 	if err := gateway.SetAdminPassword(firstConfig, secret); err != nil {
 		t.Fatal(err)
 	}
-	firstCookie, _ := login(t, first.AdminHandler(), "admin", "cluster-admin-password")
-	secondCookie, _ := login(t, second.AdminHandler(), "admin", "cluster-admin-password")
+	firstCookie, firstCSRF := login(t, first.AdminHandler(), "admin", "cluster-admin-password")
+	secondCookie, secondCSRF := login(t, second.AdminHandler(), "admin", "cluster-admin-password")
+	for _, manager := range []*gateway.Manager{first, second} {
+		for _, session := range []struct {
+			cookie *http.Cookie
+			csrf   string
+		}{{firstCookie, firstCSRF}, {secondCookie, secondCSRF}} {
+			response := adminRequest(t, manager.AdminHandler(), "/api/session", nil, session.cookie, session.csrf)
+			if response.Code != 200 || !strings.Contains(response.Body.String(), session.csrf) {
+				t.Fatalf("admin session depends on ingress node: %d %s", response.Code, response.Body)
+			}
+		}
+	}
 	replacement := safe.NewSafeBufAndErase([]byte("cluster-new-password"))
 	defer replacement.Close()
 	if err := gateway.SetAdminPassword(secondConfig, replacement); err != nil {

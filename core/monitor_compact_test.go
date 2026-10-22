@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -73,7 +74,7 @@ func TestCompactMonitorCapsAndStickyFailure(t *testing.T) {
 	for field, value := range fields {
 		if strings.HasPrefix(field, "d:") || strings.HasPrefix(field, "h:") {
 			counter, _ := cast.FromJSON[map[string]any]([]byte(value))
-			if len(counter) != 6 || counter["total"] == nil || counter["times"] == nil || counter["error"] == nil {
+			if len(counter) != 8 || counter["total"] == nil || counter["times"] == nil || counter["error"] == nil {
 				t.Fatal("unexpected counter schema", counter)
 			}
 		}
@@ -148,5 +149,78 @@ func TestMonitorPeriodKeepsLatestSuccess(t *testing.T) {
 		if bucket.Checks != 2 || bucket.Errors != 0 || bucket.Error != "" || bucket.Output == nil || bucket.Output.Body != "2" {
 			t.Fatal("latest success not retained", bucket)
 		}
+	}
+}
+
+func TestMonitorPeriodRecentResults(t *testing.T) {
+	for _, storage := range []string{"local", "redis"} {
+		t.Run(storage, func(t *testing.T) {
+			if storage == "redis" && os.Getenv("GATEWAY_REDIS_INTEGRATION") != "1" {
+				t.Skip("requires isolated Redis")
+			}
+			config := gateway.Config{DataDir: t.TempDir(), AdminDisabled: true, Prefix: fmt.Sprintf("gateway-recent-%d", time.Now().UnixNano())}
+			var rd *redis.Redis
+			if storage == "redis" {
+				config.Redis = "127.0.0.1:6379"
+				rd = redis.GetRedis(config.Redis, log.DefaultLogger)
+				t.Cleanup(func() {
+					for _, key := range rd.Do("KEYS", config.Prefix+":*").Strings() {
+						rd.Do("DEL", key)
+					}
+				})
+			}
+			m, err := gateway.NewManager(config, service.NewWebServer())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer m.Close()
+			status := 503
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(status); fmt.Fprint(w, status) }))
+			defer upstream.Close()
+			host := baseHost()
+			host.Proxies = []service.ProxyRule{{Path: "/*", To: upstream.URL}}
+			savePublish(t, m, host, 0)
+			results := []bool{false, true, false, true, true, false, true}
+			failures := 0
+			for i, ok := range results {
+				status = 503
+				if ok {
+					status = 200
+				} else {
+					failures++
+				}
+				if rd != nil {
+					rd.Do("DEL", config.Prefix+":monitor-lease:"+host.ID)
+				}
+				if _, err := m.RunMonitorCheck(context.Background(), host.ID); err != nil {
+					t.Fatal(err)
+				}
+				rows, err := m.MonitorMatrix()
+				if err != nil {
+					t.Fatal(err)
+				}
+				want := results[max(0, i-4) : i+1]
+				for _, bucket := range []gateway.MonitorBucket{rows[0].Buckets[len(rows[0].Buckets)-1], rows[0].Days[len(rows[0].Days)-1]} {
+					if !slices.Equal(bucket.Recent, want) || bucket.Checks != i+1 || bucket.Errors != failures || bucket.Successes != i+1-failures {
+						t.Fatalf("period results/counts lost: got %+v, recent want %v", bucket, want)
+					}
+					if bucket.Output == nil || bucket.Output.Status != 503 {
+						t.Fatal("recovery lost failure response", bucket)
+					}
+				}
+			}
+			restarted, err := gateway.NewManager(config, service.NewWebServer())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer restarted.Close()
+			rows, err := restarted.MonitorMatrix()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(rows[0].Buckets[len(rows[0].Buckets)-1].Recent, results[2:]) || !slices.Equal(rows[0].Days[len(rows[0].Days)-1].Recent, results[2:]) {
+				t.Fatal("recent results lost after restart")
+			}
+		})
 	}
 }

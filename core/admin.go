@@ -147,6 +147,10 @@ func (m *Manager) AdminHandler() http.Handler {
 		writer.Header().Set("X-Content-Type-Options", "nosniff")
 		writer.Header().Set("X-Frame-Options", "DENY")
 		writer.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+		if request.URL.Path == affinityPeerPath {
+			m.handleAffinityPeer(writer, request)
+			return
+		}
 		if strings.HasPrefix(request.URL.Path, "/api/v1/") {
 			m.handleMachineAPI(writer, request)
 			return

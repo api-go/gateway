@@ -91,6 +91,7 @@ func TestAlertQuietHoursAndReminder(t *testing.T) {
 		channel.QuietEnd = end
 		channel.Timezone = "UTC"
 		channel.RepeatSeconds = 60
+		channel.FailureThreshold = 1
 		w := adminRequest(t, h, "/api/alerts/save", map[string]any{"channel": channel, "revision": state["revision"]}, cookie, csrf)
 		if w.Code != 200 {
 			t.Fatal(w.Body.String())
@@ -100,7 +101,7 @@ func TestAlertQuietHoursAndReminder(t *testing.T) {
 	save(now.Add(-time.Hour).Format("15:04"), now.Add(time.Hour).Format("15:04"))
 	host := baseHost()
 	host.Proxies = []service.ProxyRule{{Path: "/*", To: upstream.URL}}
-	host.Monitor = gateway.MonitorConfig{Enabled: true, FailureThreshold: 1, ChannelIDs: []string{channel.ID}}
+	host.Monitor = gateway.MonitorConfig{Enabled: true}
 	savePublish(t, m, host, 0)
 	if _, err := m.RunMonitorCheck(context.Background(), host.ID); err != nil {
 		t.Fatal(err)

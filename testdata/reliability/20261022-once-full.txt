@@ -1,0 +1,125 @@
+--- PASS: TestACMEHTTP01IssuanceAndEncryptedCache (0.13s)
+--- PASS: TestUninitializedAdminLockedAndCommandPasswordSurvivesRestart (0.23s)
+--- PASS: TestGeneratedAdminConfigPreservesExistingAndDefaultIsPrivate (0.00s)
+--- PASS: TestAdminLoginBudget (0.00s)
+--- PASS: TestAdminSessionSurvivesRestartAndRevokes (0.22s)
+--- PASS: TestAffinityLegacyScopeCompatibility (0.19s)
+    affinity_connections_test.go:155: same H2 connection: 200 new requests use new owner; established WS 201 echoes and SSE remain on old owner
+--- PASS: TestAffinityLiveConnectionsAcrossRoutingChange (0.22s)
+--- SKIP: TestAffinityLVSWorker (0.00s)
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=initial requests=10000 gateways=3 concurrency=64 gatewayHits=[3426 3347 3227] moved=0 errors=0 elapsed=836.123485ms
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=random-gateway-repeat requests=10000 gateways=3 concurrency=64 gatewayHits=[3261 3289 3450] moved=6726 errors=0 elapsed=893.415752ms
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=gateway-join-snapshot requests=10000 gateways=4 concurrency=64 gatewayHits=[2527 2471 2550 2452] moved=6704 errors=0 elapsed=1.080983469s
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=backend-expand requests=10000 gateways=4 concurrency=64 gatewayHits=[2462 2493 2549 2496] moved=7574 errors=0 elapsed=890.326848ms
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=backend-removed requests=10000 gateways=4 concurrency=64 gatewayHits=[2437 2545 2499 2519] moved=7427 errors=0 elapsed=910.794426ms
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=gateway-killed requests=10000 gateways=3 concurrency=64 gatewayHits=[3390 3385 3225] moved=6710 errors=0 elapsed=904.902332ms
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=initial requests=10000 gateways=3 concurrency=64 gatewayHits=[3334 3344 3322] moved=0 errors=0 elapsed=933.275967ms
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=random-gateway-repeat requests=10000 gateways=3 concurrency=64 gatewayHits=[3310 3289 3401] moved=0 errors=0 elapsed=811.776873ms
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=gateway-join-snapshot requests=10000 gateways=4 concurrency=64 gatewayHits=[2420 2516 2504 2560] moved=0 errors=0 elapsed=888.96776ms
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=backend-expand requests=10000 gateways=4 concurrency=64 gatewayHits=[2461 2447 2568 2524] moved=0 errors=0 elapsed=892.790366ms
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=backend-removed requests=10000 gateways=4 concurrency=64 gatewayHits=[2519 2538 2388 2555] moved=3379 errors=0 elapsed=803.212286ms
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=gateway-killed requests=10000 gateways=3 concurrency=64 gatewayHits=[3329 3330 3341] moved=0 errors=0 elapsed=810.176507ms
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=initial requests=10000 gateways=3 concurrency=64 gatewayHits=[3346 3335 3319] moved=0 errors=0 elapsed=825.302061ms
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=random-gateway-repeat requests=10000 gateways=3 concurrency=64 gatewayHits=[3291 3358 3351] moved=0 errors=0 elapsed=911.33327ms
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=gateway-join-snapshot requests=10000 gateways=4 concurrency=64 gatewayHits=[2548 2453 2594 2405] moved=0 errors=0 elapsed=788.674688ms
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=backend-expand requests=10000 gateways=4 concurrency=64 gatewayHits=[2563 2468 2590 2379] moved=2498 errors=0 elapsed=999.35488ms
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=backend-removed requests=10000 gateways=4 concurrency=64 gatewayHits=[2517 2484 2539 2460] moved=2495 errors=0 elapsed=895.258795ms
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=gateway-killed requests=10000 gateways=3 concurrency=64 gatewayHits=[3333 3297 3370] moved=0 errors=0 elapsed=903.794005ms
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=initial requests=10000 gateways=3 concurrency=64 gatewayHits=[3287 3332 3381] moved=0 errors=0 elapsed=2.124734809s
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=random-gateway-repeat requests=10000 gateways=3 concurrency=64 gatewayHits=[3310 3328 3362] moved=0 errors=0 elapsed=1.81751135s
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=gateway-join-snapshot requests=10000 gateways=4 concurrency=64 gatewayHits=[2465 2475 2540 2520] moved=0 errors=0 elapsed=2.500057004s
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=backend-expand requests=10000 gateways=4 concurrency=64 gatewayHits=[2452 2568 2493 2487] moved=0 errors=0 elapsed=892.53648ms
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=backend-removed requests=10000 gateways=4 concurrency=64 gatewayHits=[2484 2412 2518 2586] moved=4000 errors=0 elapsed=899.366761ms
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=gateway-killed requests=10000 gateways=3 concurrency=64 gatewayHits=[3233 3390 3377] moved=0 errors=0 elapsed=986.549703ms
+--- PASS: TestAffinityRandomGatewayLVS (27.29s)
+--- PASS: TestAffinityReliability (17.36s)
+--- PASS: TestManualAffinityPathsMethodsAndBackups (0.16s)
+--- PASS: TestAutomaticAffinityCheckpointAndCapacity (0.11s)
+--- PASS: TestAffinityExpansionAndHashMovement (0.38s)
+--- PASS: TestGradualAffinityRequiresRegistry (0.06s)
+    affinity_shards_test.go:267: SHARD HTTP phase=initial requests=100000 gateways=3 gatewayHits=[33140 33432 33428] moved=0 errors=0 elapsed=12.067713944s
+    affinity_shards_test.go:267: SHARD HTTP phase=hot-IDs requests=32000 gateways=3 gatewayHits=[10816 10668 10516] moved=0 errors=0 elapsed=3.097149687s
+    affinity_shards_test.go:267: SHARD HTTP phase=gateway-join requests=10000 gateways=4 gatewayHits=[2615 2461 2409 2515] moved=0 errors=0 elapsed=879.913108ms
+    affinity_shards_test.go:324: SHARD SCHEDULING topology-to-all-gateways=1.514821931s
+    affinity_shards_test.go:267: SHARD HTTP phase=low-load-expansion requests=10000 gateways=4 gatewayHits=[2478 2487 2526 2509] moved=1440 errors=0 elapsed=894.428149ms
+    affinity_shards_test.go:341: SHARD COVERAGE liveIDs=100000 occupiedShards=4096
+    affinity_shards_test.go:342: SHARD TABLE shards=4096 changed=1024 oldVersion=1792659270459 newVersion=1792659288047 redisBytes=10408
+    affinity_shards_test.go:352: SHARD OLD checked=10000 moved=1440 hotMoved=0
+    affinity_shards_test.go:267: SHARD HTTP phase=new-IDs requests=10000 gateways=4 gatewayHits=[2537 2492 2542 2429] moved=0 errors=0 elapsed=872.692135ms
+    affinity_shards_test.go:363: SHARD NEW IDs=10000 assignedToNewNode=2500
+    affinity_shards_test.go:267: SHARD HTTP phase=stale-version-events requests=10000 gateways=4 gatewayHits=[2599 2476 2541 2384] moved=0 errors=0 elapsed=815.063951ms
+    affinity_shards_test.go:267: SHARD HTTP phase=master-killed requests=10000 gateways=3 gatewayHits=[3306 3325 3369] moved=0 errors=0 elapsed=756.344174ms
+    affinity_shards_test.go:267: SHARD HTTP phase=scheduler-unavailable-fallback requests=10000 gateways=3 gatewayHits=[3382 3297 3321] moved=2843 errors=0 elapsed=992.308897ms
+    affinity_shards_test.go:267: SHARD HTTP phase=backend-failure requests=10000 gateways=3 gatewayHits=[3367 3311 3322] moved=0 errors=0 elapsed=3.58571019s
+    affinity_shards_test.go:267: SHARD HTTP phase=non-routing-config-change requests=10000 gateways=3 gatewayHits=[3314 3386 3300] moved=0 errors=0 elapsed=891.847607ms
+    affinity_shards_test.go:434: SHARD RESULT noClientCookie=true notificationGapRecovered=true staleVersionRejected=true masterBefore=gw-0 masterAfter=gw-1
+--- PASS: TestGradualAffinityShardCluster (54.52s)
+--- PASS: TestGradualSnapshotCapacityCountsSessionBindings (0.13s)
+    affinity_sync_test.go:152: SYNC RESULT snapshot=20000 replay=1000 gapRecovery=21001 journalBytes=4776
+--- PASS: TestAffinitySnapshotReplayAndPeerAuthentication (4.88s)
+--- PASS: TestAffinityAcrossManagersAndSources (5.67s)
+--- PASS: TestAffinityValidation (0.00s)
+--- PASS: TestAffinityHTTPAndWebSocket (0.16s)
+--- PASS: TestAdvancedDingTalkExample (0.11s)
+--- PASS: TestAlertQuietHoursAndReminder (0.18s)
+--- PASS: TestAPIKeyLifecycleAndHostPermissions (0.12s)
+--- PASS: TestAPIKeyExpiration (0.11s)
+--- PASS: TestAPIKeyExpiredAuthentication (0.11s)
+--- PASS: TestAPIKeyClusterRevocation (0.12s)
+--- PASS: TestPermanentAPIKeySurvivesShanghaiPersistence (0.12s)
+--- PASS: TestPermanentAPIKeyZeroInstantAcrossTimezones (0.36s)
+--- PASS: TestGateway (0.25s)
+--- PASS: TestCertificateLibraryAdaptiveMatchingAndFallback (0.20s)
+--- PASS: TestCertificateLibrarySettingsAndAdminAPI (0.12s)
+--- PASS: TestCertificateLibraryClusterConvergence (0.03s)
+--- PASS: TestCertificateAutomaticNameAndFileRoles (0.06s)
+--- PASS: TestCertificateAutomaticSharedKeyConcurrencyAndRestart (0.02s)
+--- PASS: TestClusterSnapshotAndKeyRecovery (0.02s)
+--- PASS: TestRedisAffinitySharedMapping (0.22s)
+--- PASS: TestExplicitKeyRecoveryStaysExternal (0.01s)
+--- PASS: TestConfigurationCheckDoesNotContactOrSave (0.06s)
+--- PASS: TestConfigurationCheckAdminBoundary (0.11s)
+--- PASS: TestHostDraftPublishRollbackAndRestart (0.07s)
+--- PASS: TestInvalidPublishRetainsTrafficAndDomainOwnership (0.07s)
+--- PASS: TestLimiterCompositeDimensionsMissingAndWindows (0.00s)
+--- PASS: TestLimiterConcurrentCapacityAndObserve (0.00s)
+--- PASS: TestQuotaPrecedesStreamingProxyAndStatic (0.06s)
+--- PASS: TestAdminAuthenticationAndCSRF (0.22s)
+--- PASS: TestUploadedCertificateEncryptedAndRedacted (0.06s)
+--- PASS: TestPreviewHasNoQuotaSideEffects (0.06s)
+--- PASS: TestClusterCASConvergenceDeletionAndSharedQuotas (0.02s)
+--- PASS: TestCertificateTLSHandshakeAndCachedACME (0.17s)
+--- PASS: TestManagerReadsAreIsolatedAndEventsBounded (0.06s)
+--- PASS: TestAdminRejectsForeignOriginAndAllowsPreview (0.11s)
+--- PASS: TestClusterMissingStateRetainsCacheAcrossRestart (0.02s)
+--- PASS: TestClusterAdministratorPasswordSharedAndReset (0.32s)
+--- PASS: TestCertificateCacheCloseDuringBackgroundWrites (0.06s)
+--- PASS: TestPreviewProxyTargetWithoutPath (0.06s)
+--- PASS: TestProxyPreservesPublicHostAndProtocol (0.06s)
+--- PASS: TestRedisHourlyCountersPreserveLegacyAndIncrementOnce (0.01s)
+--- PASS: TestCompactMonitorCapsAndStickyFailure (0.10s)
+--- PASS: TestRedisCompactRingAndAtomicCounters (0.02s)
+--- PASS: TestMonitorPeriodKeepsLatestSuccess (0.07s)
+--- PASS: TestDefaultMonitorAllDomainsAndHourlyHistory (0.07s)
+--- PASS: TestGatewayDiscoveryClientAndImmediateMonitor (0.13s)
+--- PASS: TestRedirectAvailableAndExplicitStatusStrict (0.07s)
+--- PASS: TestUpstreamConnectionFailureCategory (0.06s)
+--- PASS: TestGatewayLogRetentionPreservesActiveAndUnrelated (0.00s)
+--- PASS: TestMonitorFailureHTTPClassification (0.25s)
+--- PASS: TestMonitorSignedRobotAcknowledgements (0.34s)
+--- PASS: TestMonitorHistoryTransitionsAndProtectedHeaders (0.13s)
+--- PASS: TestMonitorCustomAlertAndProviderFailure (0.17s)
+--- PASS: TestRegistryReadOnlyIncludesUnreferencedAndExpiredNodes (0.00s)
+--- PASS: TestMonitorDirectURLAndTickScheduling (0.06s)
+--- PASS: TestMonitorMissingEncryptionKeyDoesNotReplaceCredentials (0.11s)
+--- PASS: TestMonitorCustomScriptCancellation (0.11s)
+--- PASS: TestMonitorCorruptHistoryDoesNotBlockOtherHosts (0.06s)
+--- PASS: TestMonitorClusterLeaseAndSharedHistory (0.06s)
+--- PASS: TestMonitorGatewayAppSchedulesAndStops (0.11s)
+--- SKIP: TestRedisOutageRetainsTrafficAndRecovers (0.00s)
+--- PASS: TestUpstreamDraftGETAndNoRedirect (0.06s)
+--- PASS: TestUpstreamAdminBoundaryAndBusinessResponse (0.11s)
+--- PASS: TestUpstreamDiscoveryAndCancellation (0.06s)
+--- PASS: TestPublishedProxySharesHTTP2AndWebSocketTLSListener (0.06s)
+--- PASS: TestPublishedProxyRetainsWebSocketRejection (0.06s)
+ok  	apigo.cc/go/gateway/core	117.777s

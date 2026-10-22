@@ -24,13 +24,17 @@ import (
 	"time"
 )
 
-func saveAlert(t *testing.T, m *gateway.Manager, provider, webhook, secret, script string, sign bool) gateway.AlertChannel {
+func saveAlert(t *testing.T, m *gateway.Manager, provider, webhook, secret, script string, sign bool, configure ...func(*gateway.AlertChannel)) gateway.AlertChannel {
 	t.Helper()
 	h := m.AdminHandler()
 	cookie, csrf := login(t, h, "admin", "gateway-test-password")
 	listing := adminRequest(t, h, "/api/alerts", nil, cookie, csrf)
 	state, _ := cast.FromJSON[map[string]any](listing.Body.Bytes())
-	response := adminRequest(t, h, "/api/alerts/save", map[string]any{"revision": state["revision"], "webhook": webhook, "secret": secret, "channel": gateway.AlertChannel{Name: provider, Provider: provider, Enabled: true, Sign: sign, Script: script}}, cookie, csrf)
+	channel := gateway.AlertChannel{Name: provider, Provider: provider, Enabled: true, Sign: sign, Script: script}
+	for _, apply := range configure {
+		apply(&channel)
+	}
+	response := adminRequest(t, h, "/api/alerts/save", map[string]any{"revision": state["revision"], "webhook": webhook, "secret": secret, "channel": channel}, cookie, csrf)
 	if response.Code != 200 {
 		t.Fatal(response.Body.String())
 	}
@@ -119,10 +123,10 @@ func TestMonitorHistoryTransitionsAndProtectedHeaders(t *testing.T) {
 		w.Write([]byte(`{"errcode":0}`))
 	}))
 	defer robot.Close()
-	channel := saveAlert(t, m, "wecom", robot.URL, "", "", false)
+	saveAlert(t, m, "wecom", robot.URL, "", "", false, func(channel *gateway.AlertChannel) { channel.FailureThreshold = 2 })
 	host := baseHost()
 	host.Proxies = []service.ProxyRule{{Path: "/*", To: upstream.URL}}
-	host.Monitor = gateway.MonitorConfig{Enabled: true, IntervalSeconds: 60, Path: "/health", ExpectedStatus: 200, FailureThreshold: 2, Headers: map[string]string{"Authorization": "Bearer monitor-fixture"}, CheckScript: `function(response) { return JSON.parse(response.body).status === "ok"; }`, ChannelIDs: []string{channel.ID}}
+	host.Monitor = gateway.MonitorConfig{Enabled: true, IntervalSeconds: 60, Path: "/health", ExpectedStatus: 200, Headers: map[string]string{"Authorization": "Bearer monitor-fixture"}, CheckScript: `function(response) { return JSON.parse(response.body).status === "ok"; }`}
 	record := savePublish(t, m, host, 0)
 	if record.Draft.Monitor.Headers != nil || record.Draft.Monitor.SealedHeaders != "" || !record.Draft.Monitor.HasHeaders {
 		t.Fatal("monitor secrets exposed")
@@ -412,6 +416,24 @@ func TestMonitorClusterLeaseAndSharedHistory(t *testing.T) {
 	history, err := two.MonitorHistory(host.ID)
 	if err != nil || len(history) != 1 || requests.Load() != 1 {
 		t.Fatal("shared monitoring", history, err)
+	}
+	busy := host
+	busy.ID = "busy-monitor"
+	busy.Domains = []string{"busy.test"}
+	savePublish(t, one, busy, 0)
+	rd.Do("SET", prefix+":monitor-lease:"+busy.ID, "other", "EX", 45)
+	if err := one.MonitorTick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if requests.Load() != 1 {
+		t.Fatal("busy lease was bypassed")
+	}
+	rd.Do("DEL", prefix+":monitor-lease:"+busy.ID)
+	if err := one.MonitorTick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if requests.Load() != 2 {
+		t.Fatal("lease contention delayed the next tick by a full interval")
 	}
 }
 func TestMonitorGatewayAppSchedulesAndStops(t *testing.T) {

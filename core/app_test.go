@@ -124,7 +124,7 @@ func TestGateway(t *testing.T) {
 	}
 
 	// Subscriptions must be live, so updates do not wait for periodic reconciliation.
-	for _, channel := range []string{testPrefix + ":manage", testPrefix + ":channel"} {
+	for _, channel := range []string{testPrefix + ":manage", testPrefix + ":channel", testPrefix + ":affinity-events"} {
 		counts := rd.Do("PUBSUB", "NUMSUB", channel).Results()
 		if len(counts) != 2 || counts[1].Int() < 1 {
 			t.Fatalf("Redis notification subscription inactive: %s", channel)

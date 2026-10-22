@@ -3,6 +3,7 @@ package gateway
 import (
 	"apigo.cc/go/config"
 	"apigo.cc/go/log"
+	"apigo.cc/go/service"
 	"apigo.cc/go/starter"
 	"fmt"
 	"os"
@@ -16,6 +17,13 @@ func Run() {
 		return
 	}
 
+	if err := config.Load(&service.DefaultServer.Config, "service"); err != nil {
+		log.DefaultLogger.Error("service configuration failed", "error", err.Error())
+		return
+	}
+	if GatewayConf.Redis == "" {
+		GatewayConf.Redis = service.DefaultServer.Config.Register
+	}
 	if err := resolveAdminConfig(&GatewayConf); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -39,7 +47,7 @@ func Run() {
 		}
 	})
 	// 2. 初始化 Starter 信息
-	starter.SetAppInfo("gateway", "1.5.17")
+	starter.SetAppInfo("gateway", "1.5.19")
 	starter.SetUsage(`High-performance API gateway based on apigo.cc/go/service.
 Full Guide: https://apigo.cc/go/service
 

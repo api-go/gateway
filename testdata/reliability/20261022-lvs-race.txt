@@ -1,0 +1,30 @@
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=initial requests=10000 gateways=3 concurrency=64 gatewayHits=[3256 3420 3324] moved=0 errors=0 elapsed=5.399294827s
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=random-gateway-repeat requests=10000 gateways=3 concurrency=64 gatewayHits=[3347 3380 3273] moved=6742 errors=0 elapsed=4.078986607s
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=gateway-join-snapshot requests=10000 gateways=4 concurrency=64 gatewayHits=[2492 2585 2457 2466] moved=6703 errors=0 elapsed=3.970860594s
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=backend-expand requests=10000 gateways=4 concurrency=64 gatewayHits=[2551 2508 2427 2514] moved=7548 errors=0 elapsed=3.904699925s
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=backend-removed requests=10000 gateways=4 concurrency=64 gatewayHits=[2539 2439 2494 2528] moved=7462 errors=0 elapsed=4.071128539s
+    affinity_lvs_test.go:331: LVS RESULT mode=off phase=gateway-killed requests=10000 gateways=3 concurrency=64 gatewayHits=[3350 3312 3338] moved=6743 errors=0 elapsed=3.900301773s
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=initial requests=10000 gateways=3 concurrency=64 gatewayHits=[3261 3390 3349] moved=0 errors=0 elapsed=4.728671642s
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=random-gateway-repeat requests=10000 gateways=3 concurrency=64 gatewayHits=[3366 3313 3321] moved=0 errors=0 elapsed=4.087517883s
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=gateway-join-snapshot requests=10000 gateways=4 concurrency=64 gatewayHits=[2520 2479 2432 2569] moved=0 errors=0 elapsed=4.074292611s
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=backend-expand requests=10000 gateways=4 concurrency=64 gatewayHits=[2567 2462 2551 2420] moved=0 errors=0 elapsed=4.396130748s
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=backend-removed requests=10000 gateways=4 concurrency=64 gatewayHits=[2434 2521 2593 2452] moved=3333 errors=0 elapsed=4.095919703s
+    affinity_lvs_test.go:331: LVS RESULT mode=auto phase=gateway-killed requests=10000 gateways=3 concurrency=64 gatewayHits=[3280 3396 3324] moved=0 errors=0 elapsed=4.802713283s
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=initial requests=10000 gateways=3 concurrency=64 gatewayHits=[3334 3322 3344] moved=0 errors=0 elapsed=4.240702061s
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=random-gateway-repeat requests=10000 gateways=3 concurrency=64 gatewayHits=[3368 3262 3370] moved=0 errors=0 elapsed=4.410804086s
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=gateway-join-snapshot requests=10000 gateways=4 concurrency=64 gatewayHits=[2470 2504 2598 2428] moved=0 errors=0 elapsed=7.25854704s
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=backend-expand requests=10000 gateways=4 concurrency=64 gatewayHits=[2516 2541 2511 2432] moved=2552 errors=0 elapsed=4.292241161s
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=backend-removed requests=10000 gateways=4 concurrency=64 gatewayHits=[2563 2419 2509 2509] moved=2498 errors=0 elapsed=4.503990005s
+    affinity_lvs_test.go:331: LVS RESULT mode=hash phase=gateway-killed requests=10000 gateways=3 concurrency=64 gatewayHits=[3392 3275 3333] moved=0 errors=0 elapsed=4.000426738s
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=initial requests=10000 gateways=3 concurrency=64 gatewayHits=[3368 3253 3379] moved=0 errors=0 elapsed=4.007007532s
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=random-gateway-repeat requests=10000 gateways=3 concurrency=64 gatewayHits=[3275 3378 3347] moved=0 errors=0 elapsed=4.112458664s
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=gateway-join-snapshot requests=10000 gateways=4 concurrency=64 gatewayHits=[2445 2577 2473 2505] moved=0 errors=0 elapsed=7.252538504s
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=backend-expand requests=10000 gateways=4 concurrency=64 gatewayHits=[2545 2526 2437 2492] moved=0 errors=0 elapsed=4.100503057s
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=backend-removed requests=10000 gateways=4 concurrency=64 gatewayHits=[2500 2571 2461 2468] moved=4000 errors=0 elapsed=4.096452295s
+    affinity_lvs_test.go:331: LVS RESULT mode=manual phase=gateway-killed requests=10000 gateways=3 concurrency=64 gatewayHits=[3404 3264 3332] moved=0 errors=0 elapsed=4.273123064s
+--- PASS: TestAffinityRandomGatewayLVS (123.45s)
+    --- PASS: TestAffinityRandomGatewayLVS/off (28.96s)
+    --- PASS: TestAffinityRandomGatewayLVS/auto (30.68s)
+    --- PASS: TestAffinityRandomGatewayLVS/hash (32.33s)
+    --- PASS: TestAffinityRandomGatewayLVS/manual (31.47s)
+ok  	apigo.cc/go/gateway/core	239.979s

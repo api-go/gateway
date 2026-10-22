@@ -1,0 +1,25 @@
+    affinity_connections_test.go:155: same H2 connection: 200 new requests use new owner; established WS 201 echoes and SSE remain on old owner
+--- PASS: TestAffinityLiveConnectionsAcrossRoutingChange (0.99s)
+--- PASS: TestGradualAffinityRequiresRegistry (0.68s)
+    affinity_shards_test.go:261: SHARD HTTP phase=initial requests=100000 gateways=3 gatewayHits=[33424 33685 32891] moved=0 errors=0 elapsed=52.040078069s
+    affinity_shards_test.go:261: SHARD HTTP phase=hot-IDs requests=32000 gateways=3 gatewayHits=[10704 10610 10686] moved=0 errors=0 elapsed=15.401244277s
+    affinity_shards_test.go:261: SHARD HTTP phase=gateway-join requests=10000 gateways=4 gatewayHits=[2375 2527 2482 2616] moved=0 errors=0 elapsed=6.168203804s
+    affinity_shards_test.go:318: SHARD SCHEDULING topology-to-all-gateways=1.865734209s
+    affinity_shards_test.go:261: SHARD HTTP phase=low-load-expansion requests=10000 gateways=4 gatewayHits=[2509 2477 2495 2519] moved=1071 errors=0 elapsed=4.351422066s
+    affinity_shards_test.go:335: SHARD COVERAGE liveIDs=100000 occupiedShards=4096
+    affinity_shards_test.go:336: SHARD TABLE shards=4096 changed=1024 oldVersion=1792659028929 newVersion=1792659103788 redisBytes=10408
+    affinity_shards_test.go:346: SHARD OLD checked=10000 moved=1071 hotMoved=0
+    affinity_shards_test.go:261: SHARD HTTP phase=new-IDs requests=10000 gateways=4 gatewayHits=[2529 2520 2515 2436] moved=0 errors=0 elapsed=4.498951447s
+    affinity_shards_test.go:357: SHARD NEW IDs=10000 assignedToNewNode=2468
+    affinity_shards_test.go:261: SHARD HTTP phase=stale-version-events requests=10000 gateways=4 gatewayHits=[2476 2520 2505 2499] moved=0 errors=0 elapsed=5.100288347s
+    affinity_shards_test.go:261: SHARD HTTP phase=master-killed requests=10000 gateways=3 gatewayHits=[3342 3321 3337] moved=0 errors=0 elapsed=6.808098544s
+    affinity_shards_test.go:261: SHARD HTTP phase=scheduler-unavailable-fallback requests=10000 gateways=3 gatewayHits=[3329 3273 3398] moved=2912 errors=0 elapsed=4.717981752s
+    affinity_shards_test.go:261: SHARD HTTP phase=backend-failure requests=10000 gateways=3 gatewayHits=[3286 3356 3358] moved=0 errors=0 elapsed=9.758381913s
+    affinity_shards_test.go:261: SHARD HTTP phase=non-routing-config-change requests=10000 gateways=3 gatewayHits=[3324 3359 3317] moved=0 errors=0 elapsed=4.315901378s
+    affinity_shards_test.go:428: SHARD RESULT noClientCookie=true notificationGapRecovered=true staleVersionRejected=true masterBefore=gw-0 masterAfter=gw-2
+--- PASS: TestGradualAffinityShardCluster (138.69s)
+--- PASS: TestGradualSnapshotCapacityCountsSessionBindings (0.18s)
+    affinity_sync_test.go:152: SYNC RESULT snapshot=20000 replay=1000 gapRecovery=21001 journalBytes=4776
+--- PASS: TestAffinitySnapshotReplayAndPeerAuthentication (29.76s)
+--- PASS: TestClusterAdministratorPasswordSharedAndReset (3.90s)
+ok  	apigo.cc/go/gateway/core	175.284s

@@ -10,6 +10,7 @@ import (
 	"apigo.cc/go/redis"
 	"apigo.cc/go/safe"
 	"apigo.cc/go/service"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
@@ -32,6 +33,9 @@ const stateCAS = `local current=redis.call('GET',KEYS[1]) or ''; if current~=ARG
 
 type activeHosts struct{ hosts map[string]HostRecord }
 type Manager struct {
+	affinity             *affinityStore
+	affinityStop         context.CancelFunc
+	affinityDone         chan struct{}
 	monitorAttempts      map[string]monitorAttempt
 	monitorLatest        map[string]MonitorSample
 	registryName         string
@@ -62,6 +66,7 @@ type Manager struct {
 	key             *safe.SafeBuf
 	transientEvents []Event
 	sharedKey       bool
+	automaticKey    bool
 	keyUsage        map[string]time.Time
 	adminSessionMu  sync.Mutex
 	loginLimiter    *Limiter
@@ -107,11 +112,26 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 	if err := os.Chmod(config.DataDir, 0700); err != nil {
 		return nil, err
 	}
+	if config.Redis == "" {
+		config.Redis = server.Config.Register
+	}
+	installAffinityBalancer()
 	m := &Manager{config: config, server: server, state: State{Format: 1, Hosts: map[string]HostRecord{}}, applied: -1, status: NodeStatus{ID: config.NodeID, Versions: map[string]int64{}}}
 	if config.Redis != "" {
 		m.rd = redis.GetRedis(config.Redis, log.DefaultLogger)
 
 	}
+	if config.MaxAffinityEntries == 0 {
+		m.config.MaxAffinityEntries = 1000000
+	}
+	if m.config.MaxAffinityEntries < 1 {
+		return nil, fmt.Errorf("invalid MaxAffinityEntries")
+	}
+	m.affinity = newAffinityStore(m.config.MaxAffinityEntries)
+	if m.rd != nil {
+		m.affinity.ready.Store(false)
+	}
+	m.status.AffinityURL = m.config.AffinityAdvertise
 	m.captureRegistryLocked()
 	m.registryCalls = map[string]string{}
 	for name, call := range discover.Config.Calls {
@@ -129,6 +149,7 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 	}
 	m.config.CertificateKey = ""
 	m.sharedKey = keyValue != ""
+	m.automaticKey = keyValue == ""
 	var rawKey []byte
 	if keyValue != "" {
 		decoded, err := encoding.UnHex(keyValue)
@@ -149,6 +170,10 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 		return nil, fmt.Errorf("invalid persisted certificate key")
 	}
 	m.key = safe.NewSafeBufAndErase(rawKey)
+	if err := m.loadAffinityCheckpoint(); err != nil {
+		m.key.Close()
+		return nil, err
+	}
 	m.mu.Lock()
 	err := m.loadLocked()
 	if err != nil && m.rd != nil {
@@ -247,10 +272,14 @@ func (m *Manager) loadLocked() error {
 		}
 		raw := result.String()
 		if raw == "" {
-			if m.raw != "" || file.Exists(filepath.Join(m.config.DataDir, "state.json")) {
-				return fmt.Errorf("authoritative state disappeared; refusing empty configuration")
+			var err error
+			raw, err = m.recoverMissingState()
+			if err != nil {
+				return err
 			}
-			return nil
+			if raw == "" {
+				return nil
+			}
 		}
 		if raw == m.raw {
 			return nil
@@ -320,6 +349,9 @@ func (m *Manager) saveLocked(next State) error {
 	}
 	m.state, m.raw = next, string(data)
 	if m.rd != nil {
+		if err := privateWrite(filepath.Join(m.config.DataDir, "state.json"), data); err != nil {
+			return fmt.Errorf("saved to Redis but local backup failed: %w", err)
+		}
 		m.rd.Do("PUBLISH", m.config.Prefix+":manage", cast.String(next.Revision))
 	}
 	return nil
@@ -361,6 +393,9 @@ func (m *Manager) applyLocked() error {
 			return err
 		}
 	}
+	if err := m.configureAffinityShards(active); err != nil {
+		return err
+	}
 	if err := m.server.ReplaceHostPolicies(registry); err != nil {
 		return err
 	}
@@ -377,9 +412,25 @@ func (m *Manager) applyLocked() error {
 	return nil
 }
 func (m *Manager) prepareHost(host Host, version int64) (*service.PreparedHostPolicy, error) {
+	candidates := &activeHosts{hosts: map[string]HostRecord{}}
+	if active := m.active.Load(); active != nil {
+		for id, record := range active.hosts {
+			candidates.hosts[id] = record
+		}
+	}
+	candidates.hosts[host.ID] = HostRecord{Current: &host}
+	specs, err := affinityShardSpecs(candidates)
+	if err != nil {
+		return nil, err
+	}
+	if len(specs) > 0 && m.rd == nil {
+		return nil, fmt.Errorf("gradual affinity shards require Redis registry")
+	}
+
 	if !host.Enabled {
 		return service.PrepareHostPolicy(service.HostPolicy{Gate: func(r *service.Request, w *service.Response) bool { w.WriteHeader(503); return true }})
 	}
+
 	policy := service.HostPolicy{Proxies: host.Proxies, Rewrites: host.Rewrites, Statics: host.Statics, ForceHTTPS: host.HTTPS.Force}
 	adaptive := host.HTTPS.Mode == "" || host.HTTPS.Mode == "adaptive"
 	if adaptive {
@@ -442,6 +493,7 @@ func (m *Manager) prepareHost(host Host, version int64) (*service.PreparedHostPo
 		}
 		limits = append(limits, compiled)
 	}
+	affinityScopes := compileAffinityScopes(host)
 	policy.Gate = func(request *service.Request, response *service.Response) bool {
 		if !host.Enabled {
 			response.WriteHeader(http.StatusServiceUnavailable)
@@ -468,7 +520,7 @@ func (m *Manager) prepareHost(host Host, version int64) (*service.PreparedHostPo
 				return true
 			}
 		}
-		return false
+		return m.prepareAffinityRequest(host, request, response, affinityScopes)
 	}
 	return service.PrepareHostPolicy(policy)
 }
@@ -674,6 +726,12 @@ func (m *Manager) Events() []Event {
 }
 func (m *Manager) ackLocked() {
 	m.status.LastSeen = time.Now()
+	if m.affinity != nil {
+		m.status.AffinityReady = m.affinity.ready.Load()
+		m.affinity.mu.RLock()
+		m.status.AffinityEntries = len(m.affinity.entries)
+		m.affinity.mu.RUnlock()
+	}
 	if m.rd != nil {
 		raw, _ := cast.ToJSON(m.status)
 		m.rd.Do("SET", m.config.Prefix+":node:"+m.config.NodeID, raw, "EX", 30)
@@ -724,6 +782,7 @@ func (m *Manager) Nodes() []NodeStatus {
 	return nodes
 }
 func (m *Manager) Close() {
+	m.stopAffinitySync()
 	m.keyMu.Lock()
 	defer m.keyMu.Unlock()
 	if !m.closed {
@@ -787,7 +846,7 @@ func (m *Manager) SetCertificate(id string, expected int64, certificate string, 
 }
 func (m *Manager) Settings() map[string]any {
 	settings, _ := m.ACMESettings()
-	return map[string]any{"logRetentionDays": m.config.LogRetentionDays, "nodeID": m.config.NodeID, "clientIP": m.config.ClientIP, "cluster": m.rd != nil, "sharedCertificateKey": m.sharedKey, "adminListen": m.config.AdminListen, "adminDisabled": m.config.AdminDisabled, "acmeEmail": settings.Email, "acmeAcceptTerms": settings.AcceptTerms, "acmeDirectory": settings.Directory, "rateAlgorithm": "first-request fixed window", "listen": m.server.Config.Listen}
+	return map[string]any{"affinity": m.AffinityStatus(), "logRetentionDays": m.config.LogRetentionDays, "nodeID": m.config.NodeID, "clientIP": m.config.ClientIP, "cluster": m.rd != nil, "sharedCertificateKey": m.sharedKey, "adminListen": m.config.AdminListen, "adminDisabled": m.config.AdminDisabled, "acmeEmail": settings.Email, "acmeAcceptTerms": settings.AcceptTerms, "acmeDirectory": settings.Directory, "rateAlgorithm": "first-request fixed window", "listen": m.server.Config.Listen}
 }
 func (m *Manager) Handler() http.Handler { return m.server.Handler() }
 
@@ -811,11 +870,6 @@ func (m *Manager) CheckHost(host Host) error {
 	return m.validatePublicationLocked(host, record.Version+1)
 }
 func (m *Manager) validatePublicationLocked(host Host, version int64) error {
-	for _, id := range host.Monitor.ChannelIDs {
-		if _, ok := m.state.AlertChannels[id]; !ok {
-			return fmt.Errorf("监控报警通道不存在：%s", id)
-		}
-	}
 	if host.Monitor.Enabled && host.Monitor.Configured {
 		if input, err := m.monitorInput(host); err != nil {
 			return fmt.Errorf("监控设置：%w", err)

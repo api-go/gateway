@@ -1,0 +1,29 @@
+{
+  "model": "100000 live IDs, 1000 hot IDs at weight 1000, others weight 1",
+  "buckets": 4096,
+  "occupiedBuckets": 4096,
+  "totalRequestWeight": 1099000,
+  "scenarios": [
+    {
+      "name": "rendezvous-3-to-4",
+      "movedLiveIDs": 24747,
+      "movedRequestWeight": 265506,
+      "requestWeightPercent": 24.159,
+      "requiresSharedOwnershipAndLoadState": false
+    },
+    {
+      "name": "lowest-load-41-buckets",
+      "movedLiveIDs": 518,
+      "movedRequestWeight": 518,
+      "requestWeightPercent": 0.047,
+      "requiresSharedOwnershipAndLoadState": true
+    },
+    {
+      "name": "lowest-load-1024-buckets",
+      "movedLiveIDs": 19252,
+      "movedRequestWeight": 19252,
+      "requestWeightPercent": 1.752,
+      "requiresSharedOwnershipAndLoadState": true
+    }
+  ]
+}

@@ -54,6 +54,13 @@ func (g *GatewayApp) Start(ctx context.Context, logger *log.Logger) error {
 			}
 		}()
 	}
+	var syncAddress net.Addr
+	if g.adminListener != nil {
+		syncAddress = g.adminListener.Addr()
+	}
+	if err := manager.startAffinitySync(syncAddress); err != nil {
+		return err
+	}
 	if err := service.DefaultServer.Start(ctx, logger); err != nil {
 		if g.admin != nil {
 			g.admin.Close()
@@ -132,6 +139,9 @@ func (g *GatewayApp) Stop(ctx context.Context) error {
 	var first error
 	if g.scheduler != nil {
 		first = g.scheduler.Stop(ctx)
+	}
+	if g.manager != nil {
+		g.manager.stopAffinitySync()
 	}
 	if g.manager != nil && g.manager.rd != nil {
 		g.manager.rd.Unsubscribe(g.manager.config.Prefix + ":manage")

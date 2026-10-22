@@ -12,6 +12,7 @@ import (
 )
 
 type MonitorBucket struct {
+	Recent          []bool // Up to five results in completion order, oldest first.
 	Time            time.Time
 	Checks          int
 	Successes       int
@@ -107,6 +108,7 @@ func addBucket(values []MonitorBucket, sample MonitorSample) []MonitorBucket {
 		kept = append(kept, MonitorBucket{Time: stamp})
 		found = len(kept) - 1
 	}
+	kept[found].Recent = appendMonitorRecent(kept[found].Recent, sample.OK)
 	kept[found].Checks++
 	if sample.OK {
 		kept[found].Successes++

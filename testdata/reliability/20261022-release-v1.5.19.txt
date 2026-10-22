@@ -1,0 +1,230 @@
+release-v1.5.19-full.log
+?   	apigo.cc/go/gateway	[no test files]
+?   	apigo.cc/go/gateway/cmd/gateway	[no test files]
+=== RUN   TestACMEHTTP01IssuanceAndEncryptedCache
+--- PASS: TestACMEHTTP01IssuanceAndEncryptedCache (0.15s)
+=== RUN   TestUninitializedAdminLockedAndCommandPasswordSurvivesRestart
+--- PASS: TestUninitializedAdminLockedAndCommandPasswordSurvivesRestart (0.23s)
+=== RUN   TestGeneratedAdminConfigPreservesExistingAndDefaultIsPrivate
+--- PASS: TestGeneratedAdminConfigPreservesExistingAndDefaultIsPrivate (0.00s)
+=== RUN   TestAdminLoginBudget
+--- PASS: TestAdminLoginBudget (0.00s)
+=== RUN   TestAdminSessionSurvivesRestartAndRevokes
+--- PASS: TestAdminSessionSurvivesRestartAndRevokes (0.22s)
+=== RUN   TestAffinityLegacyScopeCompatibility
+--- PASS: TestAffinityLegacyScopeCompatibility (0.19s)
+=== RUN   TestAffinityLiveConnectionsAcrossRoutingChange
+--- PASS: TestAffinityLiveConnectionsAcrossRoutingChange (0.22s)
+=== RUN   TestAffinityLVSWorker
+--- SKIP: TestAffinityLVSWorker (0.00s)
+=== RUN   TestAffinityRandomGatewayLVS
+=== RUN   TestAffinityRandomGatewayLVS/off
+=== RUN   TestAffinityRandomGatewayLVS/auto
+=== RUN   TestAffinityRandomGatewayLVS/hash
+=== RUN   TestAffinityRandomGatewayLVS/manual
+--- PASS: TestAffinityRandomGatewayLVS (28.50s)
+=== RUN   TestAffinityReliability
+=== RUN   TestAffinityReliability/off
+=== RUN   TestAffinityReliability/auto
+=== RUN   TestAffinityReliability/hash
+=== RUN   TestAffinityReliability/manual
+--- PASS: TestAffinityReliability (17.77s)
+=== RUN   TestManualAffinityPathsMethodsAndBackups
+--- PASS: TestManualAffinityPathsMethodsAndBackups (0.16s)
+=== RUN   TestAutomaticAffinityCheckpointAndCapacity
+--- PASS: TestAutomaticAffinityCheckpointAndCapacity (0.11s)
+=== RUN   TestAffinityExpansionAndHashMovement
+=== RUN   TestAffinityExpansionAndHashMovement/auto
+=== RUN   TestAffinityExpansionAndHashMovement/hash
+--- PASS: TestAffinityExpansionAndHashMovement (0.39s)
+=== RUN   TestGradualAffinityRequiresRegistry
+--- PASS: TestGradualAffinityRequiresRegistry (0.06s)
+=== RUN   TestGradualAffinityShardCluster
+    affinity_shards_test.go:342: SHARD TABLE shards=4096 changed=1024 oldVersion=1792663315688 newVersion=1792663332160 redisBytes=10408
+--- PASS: TestGradualAffinityShardCluster (51.48s)
+=== RUN   TestGradualSnapshotCapacityCountsSessionBindings
+--- PASS: TestGradualSnapshotCapacityCountsSessionBindings (0.13s)
+=== RUN   TestAffinitySnapshotReplayAndPeerAuthentication
+--- PASS: TestAffinitySnapshotReplayAndPeerAuthentication (5.04s)
+=== RUN   TestAffinityAcrossManagersAndSources
+=== RUN   TestAffinityAcrossManagersAndSources/header
+=== RUN   TestAffinityAcrossManagersAndSources/cookie
+=== RUN   TestAffinityAcrossManagersAndSources/query
+=== RUN   TestAffinityAcrossManagersAndSources/session
+=== RUN   TestAffinityAcrossManagersAndSources/ip
+--- PASS: TestAffinityAcrossManagersAndSources (5.42s)
+=== RUN   TestAffinityValidation
+--- PASS: TestAffinityValidation (0.00s)
+=== RUN   TestAffinityHTTPAndWebSocket
+--- PASS: TestAffinityHTTPAndWebSocket (0.16s)
+=== RUN   TestAlertUsesMonitorStreakAcrossPolicyChanges
+--- PASS: TestAlertUsesMonitorStreakAcrossPolicyChanges (0.20s)
+=== RUN   TestAlertHostScopeDefaultsAndSelection
+--- PASS: TestAlertHostScopeDefaultsAndSelection (0.25s)
+=== RUN   TestRedisAlertUsesThirdSharedSample
+--- PASS: TestRedisAlertUsesThirdSharedSample (0.18s)
+=== RUN   TestAdvancedDingTalkExample
+--- PASS: TestAdvancedDingTalkExample (0.11s)
+=== RUN   TestAlertQuietHoursAndReminder
+--- PASS: TestAlertQuietHoursAndReminder (0.18s)
+=== RUN   TestAPIKeyLifecycleAndHostPermissions
+--- PASS: TestAPIKeyLifecycleAndHostPermissions (0.12s)
+=== RUN   TestAPIKeyExpiration
+--- PASS: TestAPIKeyExpiration (0.11s)
+=== RUN   TestAPIKeyExpiredAuthentication
+--- PASS: TestAPIKeyExpiredAuthentication (0.11s)
+=== RUN   TestAPIKeyClusterRevocation
+--- PASS: TestAPIKeyClusterRevocation (0.12s)
+=== RUN   TestPermanentAPIKeySurvivesShanghaiPersistence
+--- PASS: TestPermanentAPIKeySurvivesShanghaiPersistence (0.12s)
+=== RUN   TestPermanentAPIKeyZeroInstantAcrossTimezones
+=== RUN   TestPermanentAPIKeyZeroInstantAcrossTimezones/UTC
+=== RUN   TestPermanentAPIKeyZeroInstantAcrossTimezones/Asia/Shanghai
+=== RUN   TestPermanentAPIKeyZeroInstantAcrossTimezones/America/New_York
+--- PASS: TestPermanentAPIKeyZeroInstantAcrossTimezones (0.36s)
+=== RUN   TestGateway
+--- PASS: TestGateway (0.23s)
+=== RUN   TestCertificateLibraryAdaptiveMatchingAndFallback
+--- PASS: TestCertificateLibraryAdaptiveMatchingAndFallback (0.18s)
+=== RUN   TestCertificateLibrarySettingsAndAdminAPI
+--- PASS: TestCertificateLibrarySettingsAndAdminAPI (0.12s)
+=== RUN   TestCertificateLibraryClusterConvergence
+--- PASS: TestCertificateLibraryClusterConvergence (0.04s)
+=== RUN   TestCertificateAutomaticNameAndFileRoles
+=== RUN   TestCertificateAutomaticNameAndFileRoles/certificate-in-key
+=== RUN   TestCertificateAutomaticNameAndFileRoles/key-in-certificate
+--- PASS: TestCertificateAutomaticNameAndFileRoles (0.06s)
+=== RUN   TestCertificateAutomaticSharedKeyConcurrencyAndRestart
+--- PASS: TestCertificateAutomaticSharedKeyConcurrencyAndRestart (0.02s)
+=== RUN   TestClusterSnapshotAndKeyRecovery
+--- PASS: TestClusterSnapshotAndKeyRecovery (0.02s)
+=== RUN   TestRedisAffinitySharedMapping
+--- PASS: TestRedisAffinitySharedMapping (0.22s)
+=== RUN   TestExplicitKeyRecoveryStaysExternal
+--- PASS: TestExplicitKeyRecoveryStaysExternal (0.01s)
+=== RUN   TestConfigurationCheckDoesNotContactOrSave
+--- PASS: TestConfigurationCheckDoesNotContactOrSave (0.06s)
+=== RUN   TestConfigurationCheckAdminBoundary
+--- PASS: TestConfigurationCheckAdminBoundary (0.11s)
+=== RUN   TestHostDraftPublishRollbackAndRestart
+--- PASS: TestHostDraftPublishRollbackAndRestart (0.07s)
+=== RUN   TestInvalidPublishRetainsTrafficAndDomainOwnership
+--- PASS: TestInvalidPublishRetainsTrafficAndDomainOwnership (0.06s)
+=== RUN   TestLimiterCompositeDimensionsMissingAndWindows
+--- PASS: TestLimiterCompositeDimensionsMissingAndWindows (0.00s)
+=== RUN   TestLimiterConcurrentCapacityAndObserve
+--- PASS: TestLimiterConcurrentCapacityAndObserve (0.00s)
+=== RUN   TestQuotaPrecedesStreamingProxyAndStatic
+--- PASS: TestQuotaPrecedesStreamingProxyAndStatic (0.06s)
+=== RUN   TestAdminAuthenticationAndCSRF
+--- PASS: TestAdminAuthenticationAndCSRF (0.20s)
+=== RUN   TestUploadedCertificateEncryptedAndRedacted
+--- PASS: TestUploadedCertificateEncryptedAndRedacted (0.06s)
+=== RUN   TestPreviewHasNoQuotaSideEffects
+--- PASS: TestPreviewHasNoQuotaSideEffects (0.05s)
+=== RUN   TestClusterCASConvergenceDeletionAndSharedQuotas
+--- PASS: TestClusterCASConvergenceDeletionAndSharedQuotas (0.02s)
+=== RUN   TestCertificateTLSHandshakeAndCachedACME
+--- PASS: TestCertificateTLSHandshakeAndCachedACME (0.18s)
+=== RUN   TestManagerReadsAreIsolatedAndEventsBounded
+--- PASS: TestManagerReadsAreIsolatedAndEventsBounded (0.07s)
+=== RUN   TestAdminRejectsForeignOriginAndAllowsPreview
+--- PASS: TestAdminRejectsForeignOriginAndAllowsPreview (0.10s)
+=== RUN   TestClusterMissingStateRetainsCacheAcrossRestart
+--- PASS: TestClusterMissingStateRetainsCacheAcrossRestart (0.01s)
+=== RUN   TestClusterAdministratorPasswordSharedAndReset
+--- PASS: TestClusterAdministratorPasswordSharedAndReset (0.30s)
+=== RUN   TestCertificateCacheCloseDuringBackgroundWrites
+--- PASS: TestCertificateCacheCloseDuringBackgroundWrites (0.05s)
+=== RUN   TestPreviewProxyTargetWithoutPath
+=== RUN   TestPreviewProxyTargetWithoutPath/llm
+=== RUN   TestPreviewProxyTargetWithoutPath/llm/
+=== RUN   TestPreviewProxyTargetWithoutPath/http://127.0.0.1:8080
+=== RUN   TestPreviewProxyTargetWithoutPath/https://upstream.example.com
+--- PASS: TestPreviewProxyTargetWithoutPath (0.06s)
+=== RUN   TestProxyPreservesPublicHostAndProtocol
+=== RUN   TestProxyPreservesPublicHostAndProtocol/http
+=== RUN   TestProxyPreservesPublicHostAndProtocol/https
+--- PASS: TestProxyPreservesPublicHostAndProtocol (0.06s)
+=== RUN   TestRedisHourlyCountersPreserveLegacyAndIncrementOnce
+--- PASS: TestRedisHourlyCountersPreserveLegacyAndIncrementOnce (0.01s)
+=== RUN   TestCompactMonitorCapsAndStickyFailure
+--- PASS: TestCompactMonitorCapsAndStickyFailure (0.10s)
+=== RUN   TestRedisCompactRingAndAtomicCounters
+--- PASS: TestRedisCompactRingAndAtomicCounters (0.04s)
+=== RUN   TestMonitorPeriodKeepsLatestSuccess
+--- PASS: TestMonitorPeriodKeepsLatestSuccess (0.07s)
+=== RUN   TestMonitorPeriodRecentResults
+=== RUN   TestMonitorPeriodRecentResults/local
+=== RUN   TestMonitorPeriodRecentResults/redis
+--- PASS: TestMonitorPeriodRecentResults (0.07s)
+=== RUN   TestDefaultMonitorAllDomainsAndHourlyHistory
+--- PASS: TestDefaultMonitorAllDomainsAndHourlyHistory (0.07s)
+=== RUN   TestGatewayDiscoveryClientAndImmediateMonitor
+--- PASS: TestGatewayDiscoveryClientAndImmediateMonitor (0.14s)
+=== RUN   TestRedirectAvailableAndExplicitStatusStrict
+--- PASS: TestRedirectAvailableAndExplicitStatusStrict (0.07s)
+=== RUN   TestUpstreamConnectionFailureCategory
+--- PASS: TestUpstreamConnectionFailureCategory (0.06s)
+=== RUN   TestGatewayLogRetentionPreservesActiveAndUnrelated
+--- PASS: TestGatewayLogRetentionPreservesActiveAndUnrelated (0.00s)
+=== RUN   TestMonitorFailureHTTPClassification
+=== RUN   TestMonitorFailureHTTPClassification/401
+=== RUN   TestMonitorFailureHTTPClassification/403
+=== RUN   TestMonitorFailureHTTPClassification/404
+=== RUN   TestMonitorFailureHTTPClassification/500
+--- PASS: TestMonitorFailureHTTPClassification (0.24s)
+=== RUN   TestMonitorSignedRobotAcknowledgements
+=== RUN   TestMonitorSignedRobotAcknowledgements/dingtalk
+=== RUN   TestMonitorSignedRobotAcknowledgements/feishu
+=== RUN   TestMonitorSignedRobotAcknowledgements/wecom
+--- PASS: TestMonitorSignedRobotAcknowledgements (0.32s)
+=== RUN   TestMonitorHistoryTransitionsAndProtectedHeaders
+--- PASS: TestMonitorHistoryTransitionsAndProtectedHeaders (0.12s)
+=== RUN   TestMonitorCustomAlertAndProviderFailure
+--- PASS: TestMonitorCustomAlertAndProviderFailure (0.17s)
+=== RUN   TestRegistryReadOnlyIncludesUnreferencedAndExpiredNodes
+--- PASS: TestRegistryReadOnlyIncludesUnreferencedAndExpiredNodes (0.00s)
+=== RUN   TestMonitorDirectURLAndTickScheduling
+--- PASS: TestMonitorDirectURLAndTickScheduling (0.06s)
+=== RUN   TestMonitorMissingEncryptionKeyDoesNotReplaceCredentials
+--- PASS: TestMonitorMissingEncryptionKeyDoesNotReplaceCredentials (0.11s)
+=== RUN   TestMonitorCustomScriptCancellation
+--- PASS: TestMonitorCustomScriptCancellation (0.11s)
+=== RUN   TestMonitorCorruptHistoryDoesNotBlockOtherHosts
+--- PASS: TestMonitorCorruptHistoryDoesNotBlockOtherHosts (0.07s)
+=== RUN   TestMonitorClusterLeaseAndSharedHistory
+--- PASS: TestMonitorClusterLeaseAndSharedHistory (0.07s)
+=== RUN   TestMonitorGatewayAppSchedulesAndStops
+--- PASS: TestMonitorGatewayAppSchedulesAndStops (0.12s)
+=== RUN   TestRedisOutageRetainsTrafficAndRecovers
+--- SKIP: TestRedisOutageRetainsTrafficAndRecovers (0.00s)
+=== RUN   TestUpstreamDraftGETAndNoRedirect
+--- PASS: TestUpstreamDraftGETAndNoRedirect (0.06s)
+=== RUN   TestUpstreamAdminBoundaryAndBusinessResponse
+--- PASS: TestUpstreamAdminBoundaryAndBusinessResponse (0.11s)
+=== RUN   TestUpstreamDiscoveryAndCancellation
+--- PASS: TestUpstreamDiscoveryAndCancellation (0.06s)
+=== RUN   TestPublishedProxySharesHTTP2AndWebSocketTLSListener
+--- PASS: TestPublishedProxySharesHTTP2AndWebSocketTLSListener (0.06s)
+=== RUN   TestPublishedProxyRetainsWebSocketRejection
+--- PASS: TestPublishedProxyRetainsWebSocketRejection (0.06s)
+PASS
+ok  	apigo.cc/go/gateway/core	116.885s
+release-v1.5.19-bench.log
+?   	apigo.cc/go/gateway	[no test files]
+?   	apigo.cc/go/gateway/cmd/gateway	[no test files]
+goos: linux
+goarch: amd64
+pkg: apigo.cc/go/gateway/core
+cpu: 12th Gen Intel(R) Core(TM) i5-12400F
+BenchmarkAffinityHashProxy-3        	    5772	    203291 ns/op	   93735 B/op	    1100 allocs/op
+BenchmarkAffinityAutomaticProxy-3   	    5361	    199480 ns/op	   94017 B/op	    1100 allocs/op
+BenchmarkAffinityGradualProxy-3     	    6806	    175914 ns/op	   95318 B/op	    1107 allocs/op
+BenchmarkAPIKeyRead-3               	   46388	     25536 ns/op
+BenchmarkNewGatewayApp-3            	52567858	        23.74 ns/op	      64 B/op	       1 allocs/op
+BenchmarkLimiterIPWindow-3          	  615895	      2029 ns/op	    1304 B/op	      21 allocs/op
+BenchmarkPublishedHostQuota-3       	  143946	      7666 ns/op	    3721 B/op	      88 allocs/op
+BenchmarkMonitorCheck-3             	     553	   2194921 ns/op
+PASS
+ok  	apigo.cc/go/gateway/core	9.805s

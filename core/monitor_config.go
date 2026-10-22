@@ -21,14 +21,17 @@ type MonitorConfig struct {
 	ExpectedStatus   int
 	BodyContains     string
 	CheckScript      string
-	FailureThreshold int
-	ChannelIDs       []string
+	FailureThreshold int               // Deprecated: alert thresholds are configured on AlertChannel.
+	ChannelIDs       []string          // Deprecated: AlertChannel selects Hosts centrally.
 	Headers          map[string]string // Input only; encrypted before saving, never returned.
 	ClearHeaders     bool              // Explicitly remove saved request credentials.
 	SealedHeaders    string
 	HasHeaders       bool
 }
 type AlertChannel struct {
+	HostMode          string // all (default) or selected; selected with no IDs sends to no Hosts.
+	HostIDs           []string
+	FailureThreshold  int // Default 3; counts the same samples shown by monitoring.
 	ID                string
 	Name              string
 	Provider          string // dingtalk, wecom, feishu, custom
@@ -104,6 +107,19 @@ func runMonitorCode(ctx context.Context, code string, args ...any) (any, error) 
 	return result, nil
 }
 func hostFingerprint(host Host) string {
+	// Notification policy and scheduling do not change what a probe checks.
+	host.Monitor = monitorDefaults(host.Monitor)
+	host.Monitor.ChannelIDs = nil
+	host.Monitor.FailureThreshold = 3
+	host.Monitor.IntervalSeconds = 60
+	host.Monitor.Configured = true
+	return legacyHostFingerprint(host)
+}
+func monitorSampleMatches(sample MonitorSample, host Host) bool {
+	// Preserve the current development build's persisted streak on upgrade.
+	return sample.Fingerprint == hostFingerprint(host) || sample.Fingerprint == legacyHostFingerprint(host)
+}
+func legacyHostFingerprint(host Host) string {
 	host.Monitor = monitorDefaults(host.Monitor)
 	if len(host.Monitor.ChannelIDs) == 0 {
 		host.Monitor.ChannelIDs = nil

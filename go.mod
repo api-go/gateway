@@ -13,6 +13,7 @@ require (
 	apigo.cc/go/http v1.5.13
 	apigo.cc/go/js v1.5.17
 	apigo.cc/go/log v1.5.17
+	apigo.cc/go/rand v1.5.4
 	apigo.cc/go/redis v1.5.20
 	apigo.cc/go/safe v1.5.4
 	apigo.cc/go/service v1.5.47
@@ -29,7 +30,6 @@ require (
 require (
 	apigo.cc/go/id v1.5.9 // indirect
 	apigo.cc/go/jsmod v1.5.5 // indirect
-	apigo.cc/go/rand v1.5.4 // indirect
 	apigo.cc/go/watch v1.5.10 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/dop251/goja v0.0.0-20260311135729-065cd970411c // indirect

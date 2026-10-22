@@ -46,4 +46,4 @@ https://open.dingtalk.com/document/robots/customize-robot-security-settings
 https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot
 https://developer.work.weixin.qq.com/document/path/91770
 
-报警调度：连续失败次数在 Host 监控中设置；通道可设置故障重复提醒秒数（0 仅状态变化）及带时区的勿扰开始/结束时间，支持跨午夜。勿扰不停止监控，结束后下一次检查发送待发送通知；手动测试报警不受勿扰限制。
+报警调度：适用Host（默认全部）及连续失败阈值（默认3）在通道中设置；报警直接使用监控检查结果，不另设采样周期，修改通道或间隔不清零；通道可设置故障重复提醒秒数（0 仅状态变化）及带时区的勿扰开始/结束时间，支持跨午夜。勿扰不停止监控，结束后下一次检查发送待发送通知；手动测试报警不受勿扰限制。

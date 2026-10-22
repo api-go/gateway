@@ -12,35 +12,61 @@ import (
 
 // Config configures the gateway and its optional separate management listener.
 type Config struct {
-	Redis            string
-	Prefix           string
-	DataDir          string
-	NodeID           string
-	AdminListen      string
-	AdminDisabled    bool // Management is enabled by default; true closes its listener.
-	ClientIP         service.ClientIPPolicy
-	ACMEEmail        string
-	ACMEDirectory    string // Empty selects Let's Encrypt production; tests should use staging.
-	ACMEAcceptTerms  bool
-	CertificateKey   string // Optional explicit encryption key; automatic persistent management is the default.
-	HTTPSPort        int    // Public HTTPS redirect port; zero derives it from the TLS listener.
-	MaxRateKeys      int
-	LogRetentionDays int // 0 defaults to 30; application dated log files only.
+	MaxAffinityEntries int    // Default 1,000,000; automatic maps never silently evict live sessions.
+	AffinityAdvertise  string // Optional reachable management base URL for peer snapshots.
+	Redis              string
+	Prefix             string
+	DataDir            string
+	NodeID             string
+	AdminListen        string
+	AdminDisabled      bool // Management is enabled by default; true closes its listener.
+	ClientIP           service.ClientIPPolicy
+	ACMEEmail          string
+	ACMEDirectory      string // Empty selects Let's Encrypt production; tests should use staging.
+	ACMEAcceptTerms    bool
+	CertificateKey     string // Optional explicit encryption key; automatic persistent management is the default.
+	HTTPSPort          int    // Public HTTPS redirect port; zero derives it from the TLS listener.
+	MaxRateKeys        int
+	LogRetentionDays   int // 0 defaults to 30; application dated log files only.
 }
 
 var GatewayConf = Config{Prefix: "gateway", DataDir: "data/gateway", ClientIP: service.ClientIPPolicy{Mode: "direct"}, MaxRateKeys: 100000}
 
-type Host struct {
-	Monitor  MonitorConfig
+type AffinityConfig struct {
+	Mode         string // off (default), auto, hash, manual; redis is a legacy alias of auto
+	Source       string // header, query, cookie, session, ip
+	Name         string
+	TTLSeconds   int    // Local mapping lifetime; default 3600, maximum 604800.
+	Missing      string // balance (default), reject
+	Transform    string // full (default), last, lastDigit
+	HashStrategy string // direct (default) or gradual (shared 4096-shard table)
+	Mappings     []AffinityMapping
+}
+
+type AffinityMapping struct {
+	Values []string
+	Nodes  []string // Ordered primary / backup discovery addresses.
+}
+type AffinityRule struct {
 	ID       string
-	Name     string
-	Domains  []string
-	Enabled  bool
-	HTTPS    HTTPSConfig
-	Proxies  []service.ProxyRule
-	Rewrites []service.RewriteRule
-	Statics  map[string]string
-	Limits   []LimitRule
+	Path     string   // Incoming path: exact or trailing /* prefix.
+	Methods  []string // Empty matches all methods.
+	Affinity AffinityConfig
+}
+
+type Host struct {
+	AffinityRules []AffinityRule
+	Affinity      AffinityConfig
+	Monitor       MonitorConfig
+	ID            string
+	Name          string
+	Domains       []string
+	Enabled       bool
+	HTTPS         HTTPSConfig
+	Proxies       []service.ProxyRule
+	Rewrites      []service.RewriteRule
+	Statics       map[string]string
+	Limits        []LimitRule
 }
 type HTTPSConfig struct {
 	Mode        string // adaptive (default), off, upload (legacy), auto (legacy ACME)
@@ -108,11 +134,14 @@ type State struct {
 	Events        []Event
 }
 type NodeStatus struct {
-	ID       string
-	Revision int64
-	Versions map[string]int64
-	Error    string
-	LastSeen time.Time
+	ID              string
+	AffinityURL     string
+	AffinityReady   bool
+	AffinityEntries int
+	Revision        int64
+	Versions        map[string]int64
+	Error           string
+	LastSeen        time.Time
 }
 
 func validDomain(domain string) bool {
@@ -143,6 +172,12 @@ func validDomain(domain string) bool {
 	return true
 }
 func validateHost(host Host) error {
+	if err := validateAffinityRules(host.AffinityRules); err != nil {
+		return err
+	}
+	if err := validateAffinity(host.Affinity); err != nil {
+		return err
+	}
 	if err := validateMonitor(host.Monitor); err != nil {
 		return err
 	}

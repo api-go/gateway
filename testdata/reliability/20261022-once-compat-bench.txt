@@ -1,0 +1,11 @@
+--- PASS: TestAffinityLegacyScopeCompatibility (0.91s)
+ok  	apigo.cc/go/gateway/core	1.948s
+BenchmarkAffinityHashProxy-3        	    6058	    181925 ns/op	   94592 B/op	    1101 allocs/op
+BenchmarkAffinityAutomaticProxy-3   	    6283	    181466 ns/op	   94469 B/op	    1101 allocs/op
+BenchmarkAffinityGradualProxy-3     	    6032	    185975 ns/op	   95111 B/op	    1107 allocs/op
+BenchmarkAPIKeyRead-3               	   44306	     25511 ns/op
+BenchmarkNewGatewayApp-3            	51819970	        24.33 ns/op	      64 B/op	       1 allocs/op
+BenchmarkLimiterIPWindow-3          	  614308	      2019 ns/op	    1304 B/op	      21 allocs/op
+BenchmarkPublishedHostQuota-3       	  168601	      7313 ns/op	    3721 B/op	      88 allocs/op
+BenchmarkMonitorCheck-3             	     567	   2122884 ns/op
+ok  	apigo.cc/go/gateway/core	9.790s

@@ -12,6 +12,8 @@ import (
 )
 
 type monitorCounter struct {
+	Fingerprint  string
+	Recent       []bool
 	Total        int64
 	Times        int
 	Error        string
@@ -22,6 +24,14 @@ type monitorCounter struct {
 type monitorRecent struct {
 	At     int64
 	Sample MonitorSample
+}
+
+func appendMonitorRecent(results []bool, ok bool) []bool {
+	results = append(results, ok)
+	if len(results) > 5 {
+		results = results[len(results)-5:]
+	}
+	return results
 }
 
 func (m *Manager) compactKey(id string) string { return m.config.Prefix + ":monitor:" + id }
@@ -113,7 +123,7 @@ func compactPeriods(values map[string]string, daily bool) ([]MonitorBucket, erro
 			return nil, fmt.Errorf("invalid period")
 		}
 		counter, err := cast.FromJSON[monitorCounter](raw)
-		if err != nil || counter.Times < 1 || counter.Total < 0 {
+		if err != nil || counter.Times < 1 || counter.Total < 0 || len(counter.Recent) > 5 {
 			return nil, fmt.Errorf("invalid counter")
 		}
 		successes := counter.Times - counter.Errors
@@ -123,7 +133,7 @@ func compactPeriods(values map[string]string, daily bool) ([]MonitorBucket, erro
 		if counter.Error == "" {
 			successes = counter.Times
 		}
-		result = append(result, MonitorBucket{Time: stamp, Checks: counter.Times, Successes: successes, DurationTotalMS: counter.Total, Error: counter.Error, Errors: counter.Errors, LegacyErrors: counter.LegacyErrors, Output: counter.Output})
+		result = append(result, MonitorBucket{Time: stamp, Checks: counter.Times, Successes: successes, DurationTotalMS: counter.Total, Error: counter.Error, Errors: counter.Errors, LegacyErrors: counter.LegacyErrors, Output: counter.Output, Recent: counter.Recent})
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Time.Before(result[j].Time) })
 	return result, nil
@@ -261,7 +271,7 @@ func (m *Manager) saveCompactLocked(sample MonitorSample) error {
  if string.sub(field,1,2)=='r:' then local v=cjson.decode(redis.call('HGET',KEYS[1],field));if v.at>=latest then latest=v.at;slot=tonumber(string.sub(field,3)) end
  elseif (string.sub(field,1,2)=='d:' and string.sub(field,3)<ARGV[6]) or (string.sub(field,1,2)=='h:' and string.sub(field,3)<ARGV[7]) then table.insert(expired,field) end end
  local counters={}
- for _,field in ipairs({ARGV[1],ARGV[2]}) do local old=redis.call('HGET',KEYS[1],field);local v=old and cjson.decode(old) or {total=0,times=0,error=''};if v.error~='' and (v.errors or 0)==0 then v.legacyErrors=true end;v.errors=v.errors or 0;v.total=v.total+tonumber(ARGV[3]);v.times=v.times+1;local check=cjson.decode(ARGV[5]).sample;if ARGV[4]~='' then v.error=ARGV[4];v.errors=v.errors+1;v.output=check.output elseif v.error=='' then v.output=check.output end;counters[field]=cjson.encode(v) end
+ for _,field in ipairs({ARGV[1],ARGV[2]}) do local old=redis.call('HGET',KEYS[1],field);local v=old and cjson.decode(old) or {total=0,times=0,error=''};if v.error~='' and (v.errors or 0)==0 then v.legacyErrors=true end;v.errors=v.errors or 0;v.total=v.total+tonumber(ARGV[3]);v.times=v.times+1;local check=cjson.decode(ARGV[5]).sample;if v.fingerprint and v.fingerprint~=check.fingerprint then v.recent={} end;v.fingerprint=check.fingerprint;v.recent=v.recent or {};table.insert(v.recent,ARGV[4]=='');while #v.recent>5 do table.remove(v.recent,1) end;if ARGV[4]~='' then v.error=ARGV[4];v.errors=v.errors+1;v.output=check.output elseif v.error=='' then v.output=check.output end;counters[field]=cjson.encode(v) end
  for _,field in ipairs(expired) do redis.call('HDEL',KEYS[1],field) end
  for field,value in pairs(counters) do redis.call('HSET',KEYS[1],field,value) end
  local recent=cjson.decode(ARGV[5]);recent.at=math.max(recent.at,latest+1);redis.call('HSET',KEYS[1],string.format('r:%02d',(slot+1)%10),cjson.encode(recent));redis.call('EXPIRE',KEYS[1],2592000);return redis.call('HLEN',KEYS[1])`, 1, m.compactKey(sample.HostID), dayField, hourField, sample.DurationMS, reason, recent, dayCut, hourCut, seed)
@@ -286,6 +296,11 @@ func (m *Manager) saveCompactLocked(sample MonitorSample) error {
 		if err != nil {
 			return err
 		}
+		if counter.Fingerprint != "" && counter.Fingerprint != sample.Fingerprint {
+			counter.Recent = nil
+		}
+		counter.Fingerprint = sample.Fingerprint
+		counter.Recent = appendMonitorRecent(counter.Recent, sample.OK)
 		if !sample.OK {
 			counter.Errors++
 			counter.Output = sample.Output

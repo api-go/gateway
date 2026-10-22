@@ -1,0 +1,182 @@
+    affinity_reliability_test.go:97: RESULT mode=off phase=initial requests=10000 concurrency=64 elapsed=2.131877314s qps=4691 p50=13.260248ms p95=18.672439ms p99=28.562064ms distribution=map[one:3333 three:3333 two:3334] entries=0
+    affinity_reliability_test.go:97: RESULT mode=off phase=repeat requests=10000 concurrency=64 elapsed=2.065556503s qps=4841 p50=12.990966ms p95=16.459016ms p99=20.361747ms distribution=map[one:3334 three:3333 two:3333] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=repeat moved=6859/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.078595946s qps=4811 p50=12.966939ms p95=18.448791ms p99=23.455709ms distribution=map[four:2500 one:2500 three:2500 two:2500] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=expansion moved=7537/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=primary-removed requests=10000 concurrency=64 elapsed=2.162772425s qps=4624 p50=13.605625ms p95=19.46737ms p99=27.031943ms distribution=map[four:3334 three:3334 two:3332] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=removal moved=7463/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=failure-repeat requests=10000 concurrency=64 elapsed=2.041135302s qps=4899 p50=12.973377ms p95=16.290784ms p99=22.634107ms distribution=map[four:3333 three:3333 two:3334] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=stable-backup moved=6866/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=membership-restored requests=10000 concurrency=64 elapsed=1.984933249s qps=5038 p50=12.461761ms p95=16.674662ms p99=22.488615ms distribution=map[one:3334 three:3333 two:3333] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=restore moved=6342/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=initial requests=10000 concurrency=64 elapsed=2.366430602s qps=4226 p50=14.72366ms p95=24.118881ms p99=34.68909ms distribution=map[one:3362 three:3326 two:3312] entries=10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=repeat requests=10000 concurrency=64 elapsed=2.187130648s qps=4572 p50=13.969544ms p95=18.132001ms p99=25.379623ms distribution=map[one:3362 three:3326 two:3312] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=repeat moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.166536456s qps=4616 p50=13.634539ms p95=20.351875ms p99=29.002707ms distribution=map[one:3362 three:3326 two:3312] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=expansion moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=primary-removed requests=10000 concurrency=64 elapsed=2.104154455s qps=4753 p50=13.374557ms p95=17.961794ms p99=27.634415ms distribution=map[three:5054 two:4946] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=removal moved=3362/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=failure-repeat requests=10000 concurrency=64 elapsed=2.146977283s qps=4658 p50=13.613877ms p95=19.772459ms p99=30.484412ms distribution=map[three:5054 two:4946] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=stable-backup moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=membership-restored requests=10000 concurrency=64 elapsed=2.07501271s qps=4819 p50=13.184916ms p95=17.590682ms p99=26.475466ms distribution=map[one:3362 three:3326 two:3312] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=restore moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=initial requests=10000 concurrency=64 elapsed=2.133612327s qps=4687 p50=13.265396ms p95=20.896338ms p99=29.630933ms distribution=map[one:3245 three:3385 two:3370] entries=0
+    affinity_reliability_test.go:97: RESULT mode=hash phase=repeat requests=10000 concurrency=64 elapsed=2.250738587s qps=4443 p50=14.270262ms p95=18.391713ms p99=29.029509ms distribution=map[one:3245 three:3385 two:3370] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=repeat moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.170363013s qps=4608 p50=13.69501ms p95=18.707285ms p99=28.464955ms distribution=map[four:2445 one:2452 three:2562 two:2541] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=expansion moved=2445/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=primary-removed requests=10000 concurrency=64 elapsed=2.170819458s qps=4607 p50=13.564423ms p95=22.376961ms p99=30.875476ms distribution=map[four:3280 three:3397 two:3323] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=removal moved=2452/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=failure-repeat requests=10000 concurrency=64 elapsed=2.164698537s qps=4620 p50=13.564735ms p95=17.531457ms p99=24.110454ms distribution=map[four:3280 three:3397 two:3323] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=stable-backup moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=membership-restored requests=10000 concurrency=64 elapsed=2.178660766s qps=4590 p50=13.424502ms p95=19.564588ms p99=30.184781ms distribution=map[one:3245 three:3385 two:3370] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=restore moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=initial requests=10000 concurrency=64 elapsed=2.175552867s qps=4597 p50=13.491948ms p95=17.431627ms p99=30.773895ms distribution=map[one:4000 three:3000 two:3000] entries=0
+    affinity_reliability_test.go:97: RESULT mode=manual phase=repeat requests=10000 concurrency=64 elapsed=2.093755217s qps=4776 p50=12.913594ms p95=17.529536ms p99=27.418281ms distribution=map[one:4000 three:3000 two:3000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=repeat moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.047120132s qps=4885 p50=12.838273ms p95=17.243285ms p99=23.339345ms distribution=map[one:4000 three:3000 two:3000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=expansion moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=primary-removed requests=10000 concurrency=64 elapsed=2.268437777s qps=4408 p50=14.195752ms p95=18.957414ms p99=35.304443ms distribution=map[three:7000 two:3000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=removal moved=4000/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=failure-repeat requests=10000 concurrency=64 elapsed=2.261680285s qps=4421 p50=14.268646ms p95=20.975782ms p99=32.554421ms distribution=map[three:7000 two:3000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=stable-backup moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=membership-restored requests=10000 concurrency=64 elapsed=2.171877887s qps=4604 p50=13.505627ms p95=19.170606ms p99=29.989806ms distribution=map[one:4000 three:3000 two:3000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=restore moved=0/10000
+--- PASS: TestAffinityReliability (54.88s)
+    --- PASS: TestAffinityReliability/off (13.26s)
+    --- PASS: TestAffinityReliability/auto (13.94s)
+    --- PASS: TestAffinityReliability/hash (13.87s)
+    --- PASS: TestAffinityReliability/manual (13.82s)
+--- PASS: TestManualAffinityPathsMethodsAndBackups (0.77s)
+--- PASS: TestAutomaticAffinityCheckpointAndCapacity (0.12s)
+    affinity_sync_test.go:121: SYNC RESULT snapshot=20000 replay=1000 gapRecovery=21001 journalBytes=516
+--- PASS: TestAffinitySnapshotReplayAndPeerAuthentication (16.00s)
+--- PASS: TestAffinityAcrossManagersAndSources (33.69s)
+    --- PASS: TestAffinityAcrossManagersAndSources/header (6.60s)
+    --- PASS: TestAffinityAcrossManagersAndSources/cookie (6.61s)
+    --- PASS: TestAffinityAcrossManagersAndSources/query (6.31s)
+    --- PASS: TestAffinityAcrossManagersAndSources/session (6.38s)
+    --- PASS: TestAffinityAcrossManagersAndSources/ip (6.28s)
+--- PASS: TestRedisAffinitySharedMapping (0.26s)
+    affinity_reliability_test.go:97: RESULT mode=off phase=initial requests=10000 concurrency=64 elapsed=2.241285815s qps=4462 p50=13.90249ms p95=16.714635ms p99=36.340762ms distribution=map[one:3333 three:3334 two:3333] entries=0
+    affinity_reliability_test.go:97: RESULT mode=off phase=repeat requests=10000 concurrency=64 elapsed=2.071852497s qps=4827 p50=12.907614ms p95=19.150784ms p99=29.16276ms distribution=map[one:3334 three:3332 two:3334] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=repeat moved=6676/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.189944852s qps=4566 p50=13.672408ms p95=18.565497ms p99=30.264074ms distribution=map[four:2501 one:2499 three:2500 two:2500] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=expansion moved=7614/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=primary-removed requests=10000 concurrency=64 elapsed=2.133992516s qps=4686 p50=13.09708ms p95=19.816658ms p99=31.437142ms distribution=map[four:3333 three:3334 two:3333] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=removal moved=7470/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=failure-repeat requests=10000 concurrency=64 elapsed=2.114619727s qps=4729 p50=13.146874ms p95=20.026617ms p99=30.236349ms distribution=map[four:3334 three:3333 two:3333] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=stable-backup moved=6777/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=membership-restored requests=10000 concurrency=64 elapsed=2.091777905s qps=4781 p50=13.005089ms p95=19.085614ms p99=31.783565ms distribution=map[one:3333 three:3333 two:3334] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=restore moved=6348/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=initial requests=10000 concurrency=64 elapsed=2.2621325s qps=4421 p50=14.124815ms p95=19.214882ms p99=29.590404ms distribution=map[one:3300 three:3342 two:3358] entries=10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=repeat requests=10000 concurrency=64 elapsed=2.195319086s qps=4555 p50=13.627297ms p95=20.772311ms p99=31.578824ms distribution=map[one:3300 three:3342 two:3358] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=repeat moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.124141486s qps=4708 p50=13.454757ms p95=16.990547ms p99=21.925115ms distribution=map[one:3300 three:3342 two:3358] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=expansion moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=primary-removed requests=10000 concurrency=64 elapsed=2.169706839s qps=4609 p50=13.61468ms p95=18.041973ms p99=27.161496ms distribution=map[three:4951 two:5049] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=removal moved=3300/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=failure-repeat requests=10000 concurrency=64 elapsed=2.173779866s qps=4600 p50=13.776449ms p95=22.241282ms p99=32.18456ms distribution=map[three:4951 two:5049] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=stable-backup moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=membership-restored requests=10000 concurrency=64 elapsed=2.213280348s qps=4518 p50=13.767531ms p95=19.711568ms p99=30.799068ms distribution=map[one:3300 three:3342 two:3358] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=restore moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=initial requests=10000 concurrency=64 elapsed=2.330505182s qps=4291 p50=13.713012ms p95=20.0877ms p99=55.047648ms distribution=map[one:3311 three:3289 two:3400] entries=0
+    affinity_reliability_test.go:97: RESULT mode=hash phase=repeat requests=10000 concurrency=64 elapsed=2.184451684s qps=4578 p50=13.554898ms p95=17.107707ms p99=25.72052ms distribution=map[one:3311 three:3289 two:3400] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=repeat moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.316943068s qps=4316 p50=14.688741ms p95=19.574604ms p99=29.690881ms distribution=map[four:2439 one:2489 three:2490 two:2582] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=expansion moved=2439/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=primary-removed requests=10000 concurrency=64 elapsed=2.409848932s qps=4150 p50=15.061367ms p95=20.222235ms p99=32.893017ms distribution=map[four:3292 one:3381 three:3327] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=removal moved=2582/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=failure-repeat requests=10000 concurrency=64 elapsed=2.212657233s qps=4519 p50=13.664025ms p95=17.322699ms p99=25.885438ms distribution=map[four:3292 one:3381 three:3327] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=stable-backup moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=membership-restored requests=10000 concurrency=64 elapsed=2.269330573s qps=4407 p50=14.228524ms p95=22.566152ms p99=34.065506ms distribution=map[one:3311 three:3289 two:3400] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=restore moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=initial requests=10000 concurrency=64 elapsed=2.101115007s qps=4759 p50=12.98247ms p95=16.311216ms p99=26.55294ms distribution=map[one:3000 three:3000 two:4000] entries=0
+    affinity_reliability_test.go:97: RESULT mode=manual phase=repeat requests=10000 concurrency=64 elapsed=2.084050362s qps=4798 p50=12.897546ms p95=19.245794ms p99=28.933997ms distribution=map[one:3000 three:3000 two:4000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=repeat moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.113555422s qps=4731 p50=12.926877ms p95=20.723496ms p99=32.399585ms distribution=map[one:3000 three:3000 two:4000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=expansion moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=primary-removed requests=10000 concurrency=64 elapsed=2.240087609s qps=4464 p50=13.531844ms p95=19.600036ms p99=29.327227ms distribution=map[one:3000 three:7000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=removal moved=4000/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=failure-repeat requests=10000 concurrency=64 elapsed=2.212263704s qps=4520 p50=13.905961ms p95=18.07507ms p99=26.978125ms distribution=map[one:3000 three:7000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=stable-backup moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=membership-restored requests=10000 concurrency=64 elapsed=2.173702165s qps=4600 p50=13.296762ms p95=21.112241ms p99=33.75527ms distribution=map[one:3000 three:3000 two:4000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=restore moved=0/10000
+--- PASS: TestAffinityReliability (55.93s)
+    --- PASS: TestAffinityReliability/off (13.64s)
+    --- PASS: TestAffinityReliability/auto (14.02s)
+    --- PASS: TestAffinityReliability/hash (14.54s)
+    --- PASS: TestAffinityReliability/manual (13.73s)
+--- PASS: TestManualAffinityPathsMethodsAndBackups (0.77s)
+--- PASS: TestAutomaticAffinityCheckpointAndCapacity (0.12s)
+    affinity_sync_test.go:121: SYNC RESULT snapshot=20000 replay=1000 gapRecovery=21001 journalBytes=516
+--- PASS: TestAffinitySnapshotReplayAndPeerAuthentication (16.47s)
+--- PASS: TestAffinityAcrossManagersAndSources (33.32s)
+    --- PASS: TestAffinityAcrossManagersAndSources/header (6.34s)
+    --- PASS: TestAffinityAcrossManagersAndSources/cookie (6.42s)
+    --- PASS: TestAffinityAcrossManagersAndSources/query (6.35s)
+    --- PASS: TestAffinityAcrossManagersAndSources/session (6.59s)
+    --- PASS: TestAffinityAcrossManagersAndSources/ip (6.13s)
+--- PASS: TestRedisAffinitySharedMapping (0.24s)
+    affinity_reliability_test.go:97: RESULT mode=off phase=initial requests=10000 concurrency=64 elapsed=2.168767076s qps=4611 p50=13.371732ms p95=18.507901ms p99=26.607947ms distribution=map[one:3334 three:3333 two:3333] entries=0
+    affinity_reliability_test.go:97: RESULT mode=off phase=repeat requests=10000 concurrency=64 elapsed=2.090758469s qps=4783 p50=12.826013ms p95=17.244238ms p99=25.986027ms distribution=map[one:3333 three:3333 two:3334] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=repeat moved=6875/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.151205011s qps=4649 p50=13.210162ms p95=20.283565ms p99=30.472031ms distribution=map[four:2500 one:2500 three:2500 two:2500] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=expansion moved=7533/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=primary-removed requests=10000 concurrency=64 elapsed=2.086772273s qps=4792 p50=12.768417ms p95=19.771609ms p99=30.281906ms distribution=map[four:3333 one:3333 three:3334] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=removal moved=7454/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=failure-repeat requests=10000 concurrency=64 elapsed=2.242254788s qps=4460 p50=13.963689ms p95=18.98544ms p99=28.64466ms distribution=map[four:3334 one:3333 three:3333] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=stable-backup moved=6755/10000
+    affinity_reliability_test.go:97: RESULT mode=off phase=membership-restored requests=10000 concurrency=64 elapsed=2.138698014s qps=4676 p50=13.168121ms p95=18.350523ms p99=26.991345ms distribution=map[one:3334 three:3333 two:3333] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=off phase=restore moved=6364/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=initial requests=10000 concurrency=64 elapsed=2.327455346s qps=4297 p50=14.285275ms p95=21.587858ms p99=37.223528ms distribution=map[one:3294 three:3314 two:3392] entries=10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=repeat requests=10000 concurrency=64 elapsed=2.344484652s qps=4265 p50=14.525309ms p95=20.618798ms p99=32.381609ms distribution=map[one:3294 three:3314 two:3392] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=repeat moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.224047619s qps=4496 p50=14.044176ms p95=22.86036ms p99=29.57238ms distribution=map[one:3294 three:3314 two:3392] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=expansion moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=primary-removed requests=10000 concurrency=64 elapsed=2.217568405s qps=4509 p50=13.623652ms p95=19.957867ms p99=30.575945ms distribution=map[one:4975 two:5025] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=removal moved=3314/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=failure-repeat requests=10000 concurrency=64 elapsed=2.175557617s qps=4597 p50=13.416681ms p95=18.831954ms p99=30.031457ms distribution=map[one:4975 two:5025] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=stable-backup moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=auto phase=membership-restored requests=10000 concurrency=64 elapsed=2.173389229s qps=4601 p50=13.441969ms p95=18.834216ms p99=28.804936ms distribution=map[one:3294 three:3314 two:3392] entries=10000
+    affinity_reliability_test.go:131: MOVEMENT mode=auto phase=restore moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=initial requests=10000 concurrency=64 elapsed=2.268661856s qps=4408 p50=13.786879ms p95=19.135567ms p99=34.414532ms distribution=map[one:3325 three:3387 two:3288] entries=0
+    affinity_reliability_test.go:97: RESULT mode=hash phase=repeat requests=10000 concurrency=64 elapsed=2.223429377s qps=4498 p50=13.483831ms p95=19.092664ms p99=29.659999ms distribution=map[one:3325 three:3387 two:3288] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=repeat moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.242021861s qps=4460 p50=13.730757ms p95=21.596149ms p99=32.209663ms distribution=map[four:2575 one:2476 three:2494 two:2455] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=expansion moved=2575/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=primary-removed requests=10000 concurrency=64 elapsed=2.21391573s qps=4517 p50=13.435933ms p95=20.095404ms p99=31.086732ms distribution=map[four:3416 one:3284 three:3300] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=removal moved=2455/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=failure-repeat requests=10000 concurrency=64 elapsed=2.259736791s qps=4425 p50=13.649961ms p95=20.941448ms p99=31.998166ms distribution=map[four:3416 one:3284 three:3300] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=stable-backup moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=hash phase=membership-restored requests=10000 concurrency=64 elapsed=2.262966694s qps=4419 p50=13.862288ms p95=17.92492ms p99=26.505883ms distribution=map[one:3325 three:3387 two:3288] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=hash phase=restore moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=initial requests=10000 concurrency=64 elapsed=2.227695514s qps=4489 p50=13.693123ms p95=20.252124ms p99=30.090959ms distribution=map[one:4000 three:3000 two:3000] entries=0
+    affinity_reliability_test.go:97: RESULT mode=manual phase=repeat requests=10000 concurrency=64 elapsed=2.087382272s qps=4791 p50=13.154249ms p95=17.841044ms p99=22.597717ms distribution=map[one:4000 three:3000 two:3000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=repeat moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=expand-3-to-4 requests=10000 concurrency=64 elapsed=2.240885205s qps=4463 p50=13.625569ms p95=17.44919ms p99=26.512709ms distribution=map[one:4000 three:3000 two:3000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=expansion moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=primary-removed requests=10000 concurrency=64 elapsed=2.234312046s qps=4476 p50=13.414553ms p95=19.013963ms p99=28.503219ms distribution=map[three:7000 two:3000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=removal moved=4000/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=failure-repeat requests=10000 concurrency=64 elapsed=2.362261138s qps=4233 p50=14.597196ms p95=20.23588ms p99=29.47809ms distribution=map[three:7000 two:3000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=stable-backup moved=0/10000
+    affinity_reliability_test.go:97: RESULT mode=manual phase=membership-restored requests=10000 concurrency=64 elapsed=2.303142097s qps=4342 p50=14.056777ms p95=20.830701ms p99=35.650828ms distribution=map[one:4000 three:3000 two:3000] entries=0
+    affinity_reliability_test.go:131: MOVEMENT mode=manual phase=restore moved=0/10000
+--- PASS: TestAffinityReliability (56.55s)
+    --- PASS: TestAffinityReliability/off (13.68s)
+    --- PASS: TestAffinityReliability/auto (14.34s)
+    --- PASS: TestAffinityReliability/hash (14.27s)
+    --- PASS: TestAffinityReliability/manual (14.25s)
+--- PASS: TestManualAffinityPathsMethodsAndBackups (0.77s)
+--- PASS: TestAutomaticAffinityCheckpointAndCapacity (0.12s)
+    affinity_sync_test.go:121: SYNC RESULT snapshot=20000 replay=1000 gapRecovery=21001 journalBytes=516
+--- PASS: TestAffinitySnapshotReplayAndPeerAuthentication (16.11s)
+--- PASS: TestAffinityAcrossManagersAndSources (34.16s)
+    --- PASS: TestAffinityAcrossManagersAndSources/header (7.00s)
+    --- PASS: TestAffinityAcrossManagersAndSources/cookie (6.68s)
+    --- PASS: TestAffinityAcrossManagersAndSources/query (6.39s)
+    --- PASS: TestAffinityAcrossManagersAndSources/session (6.33s)
+    --- PASS: TestAffinityAcrossManagersAndSources/ip (6.24s)
+--- PASS: TestRedisAffinitySharedMapping (0.24s)
+PASS
+ok  	apigo.cc/go/gateway/core	321.645s

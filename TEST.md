@@ -1,5 +1,128 @@
 # Gateway 验证报告
 
+## v1.5.19 发布验证（2026-10-22）
+
+- 依赖审计：全部apigo直接/间接依赖与公开已发布索引一致，GOWORK=off，无replace；tidy-diff无变化。
+- dev1固定Go 1.26.8、3 CPU/3 GiB、独立无外网Redis容器：启用Redis集成及GATEWAY_AFFINITY_RELIABILITY=1，全量116.885s通过，包含四模式48万次请求、渐进集群212,000次请求、恢复/快照/连接/监控报警场景。3→4一次迁移1024/4096分片。独立Redis进程中断项未启用；其余race证据见下方已完成记录。
+- 基准9.805s通过；完整代理hash203291、auto199480、gradual175914 ns/op，包含本机上游和日志，不代表生产吞吐或模式性能排名。APIKeyRead25536、LimiterIPWindow2029、PublishedHostQuota7666、MonitorCheck2194921 ns/op。
+- go vet、node --check及git diff --check通过。ai/tools/getExports不可用，以GOWORK=off go doc -all ./core与导出源码交叉核对；中英文API表补齐AffinityConfig/Rule/Mapping及Manager.SyncAffinity/AffinityStatus，AlertChannel范围/阈值与MonitorBucket.Recent已说明。
+- 开发部署成功，运行命令确认gateway version 1.5.19；dev-gateway健康。qbank/llm/knowbase健康、Git入口、Teaching健康及首页均200；运行env.yml及完整state.json哈希保持不变。测试Redis已清理。
+- 结果摘录：[最终全量及基准](testdata/reliability/20261022-release-v1.5.19.txt)。dev1原始日志为/tmp/go-gateway-lvs-20261022/release-v1.5.19-{full,bench}.log，导出文档为同目录release-v1.5.19-api.txt。
+
+以下为开发过程各轮验证记录；其中旧版本号、未提交/待验收文字表示当时状态，当前发布以本节为准。
+
+## 通道集中配置及报警/监控同源（2026-10-22）
+
+- AlertChannel新增HostMode（默认all）、HostIDs、FailureThreshold（默认3）；selected空列表不发送，all包括后续新增Host。Host页面移除报警绑定与阈值，旧MonitorConfig对应字段只兼容读取、不再决定通知。旧通道不改revision/密钥即可默认全部Host。
+- 监控和通知使用相同MonitorSample及连续失败数，跨小时/日继续累计；绑定、阈值、间隔变更不影响实际探测摘要，升级识别旧摘要以保留失败数/通知状态。实际检查目标/条件变化才重置序列，小时/日recent同步重置，累计检查/失败统计保留。勿扰及重复提醒只影响发送；已有故障在通道启用后下一轮检查处理。
+- Redis租约争用回归：占用租约时不产生样本；释放后立即执行第二次tick，验证可检查且计数准确。
+- 缺失的近期结果不绘制占位点；实际1次就画1点、没有记录就空白，保留32px格子高度。周期详情显示当前连续失败次数与可用的发送错误。
+- 新增本地通道默认全部/后续新增Host、指定范围/空范围、开关通道继承失败数、策略变更/探测变更区别、旧摘要升级测试；独立Redis两个Manager轮流检查，第三个共享失败样本发送一次，第四次不重复，矩阵点和失败数一致。机器人均为隔离本地接收端。
+- 最终监控/报警相关race27.888s、全量普通9.519s、go vet、tidy-diff及JS/diff检查通过；未重复启用长时四模式/渐进可靠性和Redis进程中断，结果见此前各节。
+
+- `./dl pub`成功，dev-gateway健康；部署前后env.yml及完整state.json SHA256一致，9个Host与报警配置未写入。qbank/llm/knowbase健康、git.deeler.cn入口、Teaching健康/首页均200。独立测试Redis已stop+rm，HEAD仍442c7c6/v1.5.18，无提交、推送或Tag。
+- 浏览器验证通道默认全部/3次、指定Host保存请求、新通道默认值、Host移除绑定但保留检查间隔；保存请求在浏览器拦截，未向服务端写配置或发送人工消息。小时/日五种状态及390px窄屏通过，无JS错误；缺失点隐藏、实际格子32px。
+- 部署后bak最新检查成功，连续失败0，恢复通知记录为17:40:39且无AlertError。保留用户现有通道revision2、重复提醒300秒、上海时区19:00–09:00勿扰配置；勿扰时第三次失败仍累计但不立即发送。
+
+证据：[最终race/全量摘录](testdata/reliability/20261022-alert-scope-final.txt)，dev1原始日志 `/tmp/go-gateway-lvs-20261022/alert-scope-final.log`。bak只读诊断 `/tmp/go-gateway-alert-before.jsonl` 不含通道凭据。
+
+## 监控最近状态及5轮走势（2026-10-22，开发部署待验收）
+
+- 小时/日桶新增最多5个布尔结果，左旧右新；Redis Lua在原有单次原子写入内更新，本地文件同步更新。Hash仍最多64个field，原计数、失败原因和代表性失败响应保留。
+- 矩阵按周期最后一次结果着色：最新成功显示绿色平均ms，最新失败显示红色成功/总次数；下方5点展示最近结果。旧混合周期若缺少最后状态则显示灰色，缺少的逐次记录在当时用灰点（现已由上节改为空白），不伪造历史。失败次数不全的旧数据仍标记成功数上界。
+- `TestMonitorPeriodRecentResults`分别验证本地/Redis的7轮交替成功与失败、5轮截断、每步小时/日计数、恢复后失败响应保留、重启持久化。监控/报警/迁移/租约相关race18.276s通过；全量普通回归21.499s、vet及tidy-diff通过。长时四模式/渐进可靠性本次未重复启用，结果见上一节；独立Redis进程中断本次未启用。
+- 部署后真实管理API已有新recent数据；浏览器在真实管理页注入只读响应样例，验证恢复成功、最新失败、全成功、旧记录未知及仅一次检查五种情况，小时/日一致、详情仍保留失败响应。桌面及390px宽度通过，无JS异常；实测格子32px，原32.5px，无额外高度。样例截图为浏览器内模拟状态，未写业务监控历史。
+- `./dl pub`完成，dev-gateway健康；部署前后env.yml及完整state.json SHA256相同，本轮看到的9个现有Host未改。qbank/llm/knowbase健康、Git入口及Teaching健康/首页均200。隔离测试Redis已清理，仍未提交、推送、递增版本或Tag。
+
+证据：[监控race](testdata/reliability/20261022-monitor-recent-race.txt)、[本轮全量](testdata/reliability/20261022-monitor-recent-full.txt)。dev1原始日志 `/tmp/go-gateway-lvs-20261022/monitor-recent-*.log`；本机浏览器/部署日志 `/tmp/go-gateway-monitor-{browser,deploy}.log`，截图 `/tmp/go-gateway-monitor-recent-{desktop,mobile,example}.png`。
+
+## 一次低负载分配及连接语义（2026-10-22，工作区待验收）
+
+本轮移除迁移间隔及分批限额。dev1 固定 Go 1.26.8、GOWORK=off，独立 Redis 7.4.2、独立网络空间，测试容器 3 CPU / 3 GiB；未向业务 Redis 写测试数据。
+
+- 定向 race：175.284s通过，涵盖真实多进程渐进分片、连接语义、跨管理节点登录会话、20,000条自动保持快照 / 1,000条增量 / 同ID日志重建及双表快照容量。
+- 渐进集群每轮212,000次HTTP请求，100,000个标识覆盖4096/4096分片；3→4后端一次迁移1024分片，表不再处于待平衡状态，拓扑变化到全部Gateway表对齐实测1.865734209s。10,000个旧标识中1071个迁移，100个热点标识不动；10,000个新标识中2468个落新节点。全部分片有历史流量，仍会移动一部分旧标识；这些比例是本轮观测，不是业务保证。
+- 单张Redis分片表10,408字节，不含journal、负载报告和本地对象。Gateway逐会话entries为0；丢通知补偿、100次旧表通知拒绝、强杀主节点自动接任、调度暂停时备用与后续持久化修复一致、仅改显示名称保留原表均通过。
+- 真实TLS HTTP/2：同一客户端连接上的200个后续请求在手动映射修改后使用新上游；已建立WS的201次echo及在途SSE尾部仍由旧上游提供。该测试用确定性手动映射验证连接语义，不冒充真实LVS或渐进分片的端到端长连接验证。
+- 同一管理员Cookie/CSRF可在两个Manager读取会话，密码重置撤销继续通过。
+- 保留移除参数前的规范化摘要中的两个零字段，避免已有保持映射/分片scope因字段删除失去寻址；业务配置及UI不再提供这些参数。所有实例仍须统一升级配置/同步协议。
+- 最终源码全量 `go test -count=1 -v ./...` 117.777s通过，含上述旧摘要兼容断言、四模式24万次随机Gateway请求和四模式24万次可靠性请求；渐进集群再次一次迁移1024分片，全部节点对齐1.514821931s，旧标识迁移1440/10,000、热点不动，新标识2500/10,000到新节点。此前race的1071/2468为独立一轮，不混作同一观测。
+- `TestAffinityLVSWorker`是只由子进程激活的入口，顶层跳过，实际子进程由集群测试覆盖；`TestRedisOutageRetainsTrafficAndRecovers`本轮未启用，不计通过。跨物理机分区、真实内核LVS及小时级持续压力仍未覆盖。
+- 摘要兼容额外定向race及 `go test -run '^$' -bench=. ./...` 通过；3 CPU同机完整代理基准hash181925 / auto181466 / gradual185975 ns/op（含本机上游及日志，不作为生产吞吐承诺）。go vet、go mod tidy -diff、JS语法及diff检查通过。
+
+开发部署与浏览器复核：`./dl pub`成功，dev-gateway健康；四模式说明/灯泡、去掉旧预算输入、手动映射及多规则、未保存退出通过，8个Host无写入、无JS异常。部署前后env.yml及完整state.json的SHA256一致。qbank/llm/knowbase健康及Git入口均200，Teaching健康200、首页401鉴权响应。测试Redis已清理；HEAD仍442c7c6 / v1.5.18，无提交、推送或Tag。
+
+证据：[一次分配race](testdata/reliability/20261022-once-race.txt)、[最终全量](testdata/reliability/20261022-once-full.txt)、[摘要兼容race与基准](testdata/reliability/20261022-once-compat-bench.txt)。原始日志在dev1 `/tmp/go-gateway-lvs-20261022/finish-*.log`。
+
+## 历史验证：30秒 / 41分片限速构建（2026-10-22，已被一次分配替代）
+
+以下迁移数量、预算参数和界面观测仅证明旧构建，不作为当前一次分配算法的验证结果。
+
+- 用相互独立的 OS 进程启动真实 GatewayApp（各自 Discover、订阅、后台同步、数据目录与管理端口），共享独立测试 Redis；调用端每次随机选择一个 Gateway，64 并发、同一 HTTP Client 复用，无 CookieJar、不传分片版本。模拟 LVS 分发行为，未实际安装 LVS。
+- 四模式每轮 24 万次真实 HTTP 请求：3 Gateway 首次/复访、增加第4个 Gateway、后端3→4、移除后端、强制终止一个 Gateway。两轮定向 race + 引入分片后的定向 race + 全量回归累计 96 万次 LVS 请求通过。检查每阶段各 Gateway 的命中数，确保全部入口都实际参与；auto 在跨入口复访、Gateway 加入/故障和后端扩容时零漂移。
+- 最终渐进分片测试每轮 **212,000 次请求**，普通构建及 race 各一轮通过（66.761s / 107.058s）。先发送10万个标识，确认 **4096/4096 分片均有历史流量**，再对100个热点标识发送32,000次请求。默认首次扩容只迁移41个低负载分片；复访1万个旧标识时仅18/14个迁移，100个热点标识均未漂移；1万个全新标识中100/97个由新增节点承接。这是本轮分布的观测，不保证所有业务分布下相同比例。
+- 单张实际 Redis 分片表 MEMORY USAGE 为 **10,383 字节**（4个实际地址、4096个owner索引和元数据），各 Gateway 的逐会话映射 entries 为0。此数不包含 journal、短期负载报告、Gateway本地计数器/解码对象，不能当作整个集群的总内存。
+- 第4个 Gateway 经真实启动/加密快照加入；关闭一个从节点的 affinity 订阅后仍从后台补齐共享表。持续注入100次旧表通知时，新标识复访未回退。调度主 `gw-0` 被强制终止后自动选出新主，已有路由保持稳定；通过固定租约占用15秒暂停调度，故障备用转发正常，租约恢复后持久化重分配与即时备用归属完全一致。只改迁移预算也不创建新表或漂移旧归属。
+- 边界：非法策略/周期/比例拒绝；65张活动表在发布前拒绝；无注册中心拒绝启用渐进策略；草稿允许保存但无效策略不能发布。分片表事件按版本覆盖，会话映射仍保留首条，不混用更新语义；快照额外按编码字节数限页。
+- 引入分片后的全量可靠性回归127.057s通过；含随机多Gateway、分片、快照、冲突和生命周期的race239.979s通过；随后对最终分片/备用/预算变更的212,000次race单独复测通过。最终短规模全量及 go vet 再次通过，go mod tidy -diff通过；Rand v1.5.4仅由间接改为直接测试依赖，没有升级依赖版本。
+- 同机3 CPU限额下完整代理基准：hash245650 ns/op，auto235270，gradual240248；含本机HTTP上游与日志，非纯路由成本，也不作为生产吞吐承诺。
+- 故障测试定位并补齐了“丢订阅的从节点接任主后缺少其他节点负载”问题：每份负载报告按Gateway/固定分片保留10秒，订阅为主、后台缺失补取，不增加逐请求Redis操作。失败证据保留在 dev1 `/tmp/go-gateway-lvs-20261022/shards-load-gap-failure.log`。另按实际草稿/发布契约修正了测试断言，保留 `shard-coverage.log`；未把失败运行计作通过。
+- 界面每模式一句话提示，灯泡展开适用场景/收益/代价；hash可选纯哈希或渐进迁移。浏览器验证四种提示、灯泡原生展开、渐进参数采集、切换模式清理无效策略字段，未保存退出后8个Host配置不变，无页面JS错误。
+
+收尾同步协议修复及最终验证：
+
+- 删除并重建 Stream 时即使复用同一 ID，也以游标对应内容的 SHA256 指纹识别代际变化；ID/指纹作为同一个原子快照发布，节点分页快照及本地检查点同时携带它们。验证失败时获取节点快照并从有效日志重放，避免漏记录或反复停在无效游标。该校验仅在后台同步，客户端无 Cookie/版本要求。
+- 分片表事件不占逐会话映射配额；新增 MaxAffinityEntries=1、两张分片表的新节点快照测试。最终全量回归8.365s及10轮游标/双表容量race14.133s通过，go vet通过。
+- 最终协议版本再次执行100,000标识/全部4096分片/212,000请求的完整渐进调度race，并结合20,000条自动保持快照、1000条补偿和同ID日志重建、双表容量验证，145.475s全部通过。该轮首次迁移41分片，复访10,000旧标识移动20个、热点不动，10,000新标识中110个落到新节点。此前18/14个的观测仍保留，说明比例随实际负载及地址哈希变化。
+- 开发环境通过真实浏览器验证四种说明、灯泡展开/收起、渐进参数、手动模式切换及未保存退出，无JS异常；部署前后env.yml和完整state.json的SHA256均一致，8个Host无写入。qbank/llm/knowbase/git入口200；Teaching入口与直连上游同为401鉴权响应。正式版本仍1.5.18，无提交、推送或Tag。
+
+结果摘录：[随机Gateway race](testdata/reliability/20261022-lvs-race.txt)、[满分片普通构建](testdata/reliability/20261022-shards.txt)、[满分片race](testdata/reliability/20261022-shards-race.txt)、[最终协议race](testdata/reliability/20261022-final-protocol-race.txt)、[游标重复10轮](testdata/reliability/20261022-cursor-regression.txt)。另附[低负载分片分析脚本](testdata/reliability/shard-expansion.py)及[模拟结果](testdata/reliability/20261022-shard-experiment.json)；模拟不等于生产实测。尚未覆盖跨物理机网络分区、真实LVS内核分发或小时级持续压力，不宣称零旧会话漂移或瞬时强一致。
+
+## 四种保持模式批量可靠性验证（2026-10-22，开发服务器，无发布）
+
+在 dev1 的独立 Docker 网络命名空间与独立 Redis 中运行，未改业务配置或重启开发 Gateway。Go 1.26.8，测试容器限额 4 CPU / 3 GiB，GOWORK=off，使用已发布依赖。
+
+每种模式 10,000 个不同数字标识、64 并发、6 个阶段：首次分配、重复请求、3→4 节点、移除一个原节点、故障后重复请求、恢复原有节点集合。每阶段 10,000 次，共每模式 60,000 次。三轮 race 加最终全量回归合计 **960,000 次四模式请求**，通过且无请求错误、无违反规则的迁移、无数据竞争。
+
+| 模式 | 最终回归扩容漂移 | 移除原节点后的变化 | 重复/故障后重复/恢复原集合 |
+| --- | --- | --- | --- |
+| off | 不约束 | 普通负载均衡，三节点均收到请求，无保持映射 | 不约束固定归属 |
+| auto | 0 / 10,000 | 3,297 个受影响会话使用原备用链，其他会话不动 | 均零非预期漂移 |
+| hash | 2,524 / 10,000（25.24%） | 2,480 个会话迁移，全部原属被移除节点 | 均零非预期漂移 |
+| manual | 0 / 10,000 | 4,000 个会话全部到指定备用节点 | 均零非预期漂移 |
+
+三轮 race 中 hash 扩容漂移为 24.45%、24.39%、25.75%，全部只迁往新增节点；auto/manual 扩容始终零漂移。手动映射额外逐条核对数字个位数与主备配置，非仅比较稳定性。
+
+额外验证：
+
+- header、query、cookie、session、IP 各 2,000 个标识，每标识 5 次跨两 Gateway 请求，每轮共 50,000 次；三轮 race 与全量回归均通过。
+- auto 每轮创建 20,000 条映射，分页从已有 Gateway 同步；未订阅节点补齐 1,000 条增量；删除短期日志后恢复到 21,001 条。新映射请求阶段 Redis 无 affinity journal，显式后台同步后才产生短期日志，无逐会话 Redis key。
+- 最终全量回归及补充 race 在新 Gateway 上逐条发送 20,000 个原会话请求，路由结果与源 Gateway 一致；保留首次冲突、检查点重启、容量拒绝和路径/方法/缺失标识/主备等边界回归。
+- 三轮定向 race：321.645s。最终全量：74 项顶层测试通过、1 项独立 Redis 进程故障测试未启用，32.537s。该进程故障项不能算作本轮通过。
+
+最终普通构建的六阶段观测：off 17,930～19,285 req/s，auto 17,524～19,595，hash 17,096～18,616，manual 18,319～19,207；各模式阶段 p99 分别约 9.09～13.92 / 8.57～11.59 / 8.89～12.39 / 8.89～9.64 ms。入口为并发调用真实 Gateway Handler，上游为真实本机 HTTP 服务，保留代理与日志开销；不包含客户端到 Gateway 的网络/TLS，因此不能当生产网络吞吐上限或模式间性能排名。
+
+测试夹具修正记录：首次延长 race 后，发现模拟节点仅本地 SetNode、定时注册中心刷新后被移除；登记夹具心跳时又纠正了 DB15 连接串缺少 redis:// 前缀的问题。修正后重新完整运行三轮。失败日志保留在 dev1 `/tmp/go-gateway-reliability-20261022/race-fixture-failure.log` 和 `race-fixture-dsn-failure.log`，未通过重试掩盖请求失败。另将大批量待同步队列完整排空后再开始增量补齐断言，避免把单批上限误当数据丢失。
+
+复现：准备独立 Redis，使容器内 127.0.0.1:6379 指向测试实例，设置 `GATEWAY_REDIS_INTEGRATION=1 GATEWAY_AFFINITY_RELIABILITY=1 GOWORK=off`；执行 `go test -v ./...`，定向三轮执行 `go test -race -v ./core -run 'TestAffinityReliability|TestAffinitySnapshotReplayAndPeerAuthentication|TestAffinityAcrossManagersAndSources|TestRedisAffinitySharedMapping|TestAutomaticAffinityCheckpointAndCapacity|TestManualAffinityPathsMethodsAndBackups' -count 3`。
+
+补充 20,000 条快照路由逐条核对的 race 通过（30.073s），随后 go vet ./... 通过。
+
+结果摘录：[全量](testdata/reliability/20261022-full.txt)、[三轮 race](testdata/reliability/20261022-race.txt)、[快照路由 race](testdata/reliability/20261022-snapshot-race.txt)。本轮仍未覆盖百万条同时存活映射、跨物理机网络分区或小时级持续压测；不宣称自动模式在首次并发冲突下具备强一致性，也不以发现层主动移除测试代替故障检测延迟验证。
+
+## 会话保持重构工作区验证（2026-10-22，待验收，不新增版本）
+
+- GOWORK=off，正式依赖保持不变，无 replace；全量Redis集成与独立Redis进程中断测试通过，74项顶层测试（11.176s）。
+- 全量Redis race通过（67.465s）；最终保持/生命周期定向race通过（8.307s），末次日志断档及冲突定向race通过（2.598s），并发快照/游标与生命周期定向race通过（3.131s）。
+- 多条规则：路径完全/前缀、GET方法限定、首匹配off排除、缺失标识拒绝、数字个位数、指定主备、手动未匹配502。
+- 自动保持：扩容不迁移已有会话；刻意制造不同节点视图的首次冲突，保留各自首条记录并统计；容量上限拒绝新会话、保留旧会话；检查点重启恢复。
+- hash：增加节点只将部分键移给新增节点，删除新增节点后原归属恢复；不设置4096目标数量。
+- 同步：600条映射跨页节点快照、匿名访问401、未订阅节点从游标补齐、增量日志断档后的节点快照恢复。600次新会话HTTP请求没有产生Redis增量写入，后台SyncAffinity才写有TTL的日志，不创建逐会话Redis键。
+- GatewayApp管理、旧路由和affinity-events三通道生命周期；短期日志容量与过期、节点快照加密鉴权；HTTP/2/WebSocket及现有状态/密钥恢复回归通过。
+- 全量基准（Apple M3 Max）：AffinityHashProxy 139565 ns/op，AffinityAutomaticProxy 142120 ns/op，均1106 allocs/op；包含完整代理、本地HTTP上游和日志，非纯查表耗时，不代表生产吞吐上限。APIKeyRead 39726 ns/op，LimiterIPWindow 1317 ns/op，PublishedHostQuota 5013 ns/op，MonitorCheck 5120970 ns/op。
+- go vet、node --check、go mod tidy -diff及git diff --check通过；go doc -all ./core与源码核对AffinityRule / AffinityMapping / AffinityConfig、Manager.SyncAffinity / AffinityStatus，替代ai/tools/getExports。
+- 未做百万级映射容量及长时间压力验证，不承诺每条固定50字节；内存需包含映射、主备链、待同步数据及快照副本。
+
 ## v1.5.18 发布验证（2026-10-22）
 
 - 永久 Key：UTC、Asia/Shanghai、America/New_York 下使用当前序列化持久化及重启；旧无时区零时间兼容；真实过期、Host 范围、撤销和权限拒绝。
@@ -195,3 +318,5 @@ BenchmarkPublishedHostQuota-16    	  221820	      5252 ns/op	    3633 B/op	     
 - 开发浏览器验证 7 Host 迁移后近期详情合计 70 条、小时最多 24 桶及日桶最多 30 个、302 判定、失败分类、ms/× 显示和 60 秒周期，实际 Host 配置未改变。
 
 监控周期详情：每周期累计检查次数、耗时、失败次数，仅保存一份响应（存在失败保留最近失败，否则最后成功），正文上限 4096 字节。旧周期未记录的失败次数/响应明确标注；近期 10 槽用于连续失败和报警状态。Hosts 与监控按添加时间升序，旧 Host 从历史/管理日志推导，缺失时以 ID 稳定排序。
+
+- TestPermanentAPIKeySurvivesShanghaiPersistence：独立上海时区子进程覆盖永久Key持久化、重启和认证；同时运行有限过期与撤销回归。

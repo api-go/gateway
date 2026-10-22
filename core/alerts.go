@@ -213,6 +213,10 @@ func (m *Manager) handleAlertChannels(w http.ResponseWriter, r *http.Request, ac
 	if r.Method == "GET" && r.URL.Path == "/api/alerts" {
 		channels := []AlertChannel{}
 		for _, entry := range m.state.AlertChannels {
+			if entry.HostMode == "" {
+				entry.HostMode = "all"
+			}
+			entry.FailureThreshold = alertThreshold(entry)
 			entry.HasCredentials = entry.SealedCredentials != ""
 			entry.SealedCredentials = ""
 			channels = append(channels, entry)
@@ -239,20 +243,6 @@ func (m *Manager) handleAlertChannels(w http.ResponseWriter, r *http.Request, ac
 	}
 	entry := input.Channel
 	if r.URL.Path == "/api/alerts/delete" {
-		for _, record := range next.Hosts {
-			hosts := []Host{record.Draft}
-			if record.Current != nil {
-				hosts = append(hosts, *record.Current)
-			}
-			for _, host := range hosts {
-				for _, id := range host.Monitor.ChannelIDs {
-					if id == entry.ID {
-						http.Error(w, "通道仍被 Host 引用，请先取消引用", 400)
-						return
-					}
-				}
-			}
-		}
 		delete(next.AlertChannels, entry.ID)
 	} else if r.URL.Path == "/api/alerts/save" {
 		if entry.ID == "" {
@@ -277,6 +267,12 @@ func (m *Manager) handleAlertChannels(w http.ResponseWriter, r *http.Request, ac
 		if err := validateAlertSchedule(&entry); err != nil {
 			http.Error(w, err.Error(), 400)
 			return
+		}
+		for _, id := range entry.HostIDs {
+			if _, exists := next.Hosts[id]; !exists {
+				http.Error(w, "Host不存在："+id, 400)
+				return
+			}
 		}
 		previous := next.AlertChannels[entry.ID]
 		if previous.ID != "" && previous.Provider != entry.Provider && entry.Provider != "custom" && input.Webhook == "" {

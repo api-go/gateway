@@ -397,7 +397,6 @@ func (m *Manager) RunMonitorCheck(ctx context.Context, id string) (MonitorSample
 		return MonitorSample{}, fmt.Errorf("Host 未发布、停用或监控未启用")
 	}
 	host := *state.Hosts[id].Current
-	settings := monitorDefaults(host.Monitor)
 	ctx, cancel := context.WithTimeout(ctx, 25*time.Second)
 	defer cancel()
 	previous, err := m.latestMonitor(id)
@@ -415,7 +414,7 @@ func (m *Manager) RunMonitorCheck(ctx context.Context, id string) (MonitorSample
 		}
 	}
 	sample := m.probeMonitor(ctx, host)
-	if previous.Fingerprint == sample.Fingerprint {
+	if monitorSampleMatches(previous, host) {
 		sample.Notifications = previous.Notifications
 		sample.NotificationTimes = previous.NotificationTimes
 		sample.Failures = previous.Failures
@@ -431,10 +430,6 @@ func (m *Manager) RunMonitorCheck(ctx context.Context, id string) (MonitorSample
 	} else {
 		sample.Failures++
 	}
-	desired := ""
-	if !sample.OK && sample.Failures >= settings.FailureThreshold {
-		desired = "故障"
-	}
 	m.mu.Lock()
 	loadErr := m.loadLocked()
 	currentPublished := m.state.Hosts[id].Current
@@ -448,8 +443,8 @@ func (m *Manager) RunMonitorCheck(ctx context.Context, id string) (MonitorSample
 		return sample, fmt.Errorf("监控配置已变化，未发送报警")
 	}
 	activeNotifications := map[string]bool{}
-	for _, channelID := range settings.ChannelIDs {
-		if channel, exists := state.AlertChannels[channelID]; exists {
+	for channelID, channel := range state.AlertChannels {
+		if channel.Enabled && alertApplies(channel, id) {
 			activeNotifications[channelID+"@"+cast.String(channel.Revision)] = true
 		}
 	}
@@ -459,13 +454,15 @@ func (m *Manager) RunMonitorCheck(ctx context.Context, id string) (MonitorSample
 			delete(sample.NotificationTimes, key)
 		}
 	}
-	for _, channelID := range settings.ChannelIDs {
-		channel, exists := state.AlertChannels[channelID]
-		if !exists || !channel.Enabled {
+	for channelID, channel := range state.AlertChannels {
+		if !channel.Enabled || !alertApplies(channel, id) {
 			continue
 		}
 		notificationKey := channelID + "@" + cast.String(channel.Revision)
-		transition := desired
+		transition := ""
+		if !sample.OK && sample.Failures >= alertThreshold(channel) {
+			transition = "故障"
+		}
 		if sample.OK && sample.Notifications[notificationKey] == "故障" {
 			transition = "恢复"
 		}
@@ -554,7 +551,7 @@ func (m *Manager) MonitorTick(ctx context.Context) error {
 		}
 		settings := monitorDefaults(record.Current.Monitor)
 		fingerprint := hostFingerprint(*record.Current)
-		if !last.Time.IsZero() && last.Fingerprint == fingerprint && time.Since(last.Time) < time.Duration(settings.IntervalSeconds)*time.Second {
+		if !last.Time.IsZero() && monitorSampleMatches(last, *record.Current) && time.Since(last.Time) < time.Duration(settings.IntervalSeconds)*time.Second {
 			continue
 		}
 		m.monitorMu.Lock()
@@ -566,13 +563,23 @@ func (m *Manager) MonitorTick(ctx context.Context) error {
 		if m.monitorAttempts == nil {
 			m.monitorAttempts = map[string]monitorAttempt{}
 		}
-		m.monitorAttempts[id] = monitorAttempt{Time: time.Now(), Fingerprint: fingerprint}
+		attempt = monitorAttempt{Time: time.Now(), Fingerprint: fingerprint}
+		m.monitorAttempts[id] = attempt
 		m.monitorMu.Unlock()
 		count++
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			_, err := m.RunMonitorCheck(ctx, id)
+			if errors.Is(err, errMonitorBusy) {
+				// No sample was produced. Retry on the next scheduler tick rather
+				// than treating contention as a full monitoring interval.
+				m.monitorMu.Lock()
+				if m.monitorAttempts[id] == attempt {
+					delete(m.monitorAttempts, id)
+				}
+				m.monitorMu.Unlock()
+			}
 			if err != nil && !errors.Is(err, errMonitorBusy) {
 				errorMu.Lock()
 				if first == nil {
@@ -650,7 +657,7 @@ func (m *Manager) MonitorStatuses() (map[string]HostMonitorStatus, error) {
 		last, err := m.latestMonitor(id)
 		if err != nil {
 			entry.HistoryError = true
-		} else if last.Fingerprint == fingerprint && !last.Time.IsZero() && (entry.Last == nil || entry.Monitoring || last.Time.After(entry.Last.Time)) {
+		} else if monitorSampleMatches(last, record.Draft) && !last.Time.IsZero() && (entry.Last == nil || entry.Monitoring || last.Time.After(entry.Last.Time)) {
 			entry.Last = &last
 		}
 		if entry.Last != nil && entry.Monitoring {
