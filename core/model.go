@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	gohttp "apigo.cc/go/http"
 	"apigo.cc/go/service"
 	"fmt"
 	"net"
@@ -12,22 +13,24 @@ import (
 
 // Config configures the gateway and its optional separate management listener.
 type Config struct {
-	MaxAffinityEntries int    // Default 1,000,000; automatic maps never silently evict live sessions.
-	AffinityAdvertise  string // Optional reachable management base URL for peer snapshots.
-	Redis              string
-	Prefix             string
-	DataDir            string
-	NodeID             string
-	AdminListen        string
-	AdminDisabled      bool // Management is enabled by default; true closes its listener.
-	ClientIP           service.ClientIPPolicy
-	ACMEEmail          string
-	ACMEDirectory      string // Empty selects Let's Encrypt production; tests should use staging.
-	ACMEAcceptTerms    bool
-	CertificateKey     string // Optional explicit encryption key; automatic persistent management is the default.
-	HTTPSPort          int    // Public HTTPS redirect port; zero derives it from the TLS listener.
-	MaxRateKeys        int
-	LogRetentionDays   int // 0 defaults to 30; application dated log files only.
+	ExternalAddress      gohttp.ExternalAddressPolicy // Business ingress only; empty trusts no proxies.
+	AdminExternalAddress gohttp.ExternalAddressPolicy // Independent management-listener trust.
+	MaxAffinityEntries   int                          // Default 1,000,000; automatic maps never silently evict live sessions.
+	AffinityAdvertise    string                       // Optional reachable management base URL for peer snapshots.
+	Redis                string
+	Prefix               string
+	DataDir              string
+	NodeID               string
+	AdminListen          string
+	AdminDisabled        bool // Management is enabled by default; true closes its listener.
+	ClientIP             service.ClientIPPolicy
+	ACMEEmail            string
+	ACMEDirectory        string // Empty selects Let's Encrypt production; tests should use staging.
+	ACMEAcceptTerms      bool
+	CertificateKey       string // Optional explicit encryption key; automatic persistent management is the default.
+	HTTPSPort            int    // Public HTTPS redirect port; zero derives it from the TLS listener.
+	MaxRateKeys          int
+	LogRetentionDays     int // 0 defaults to 30; application dated log files only.
 }
 
 var GatewayConf = Config{Prefix: "gateway", DataDir: "data/gateway", ClientIP: service.ClientIPPolicy{Mode: "direct"}, MaxRateKeys: 100000}

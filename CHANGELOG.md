@@ -1,3 +1,6 @@
+## [v1.5.21] - 2026-10-23
+- Independent business/admin direct-peer trust and shared HTTP external-address parsing; HTTPS reverse-proxy login, Secure Cookie and write-origin validation use one snapshot.
+
 # Changelog
 
 ## [v1.5.20] - 2026-10-23

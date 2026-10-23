@@ -360,3 +360,22 @@ Hosts 与监控统一按添加时间升序；旧记录从保留的发布历史�
 Gateway 代理入口支持 RFC 8441；Go/x/net 的服务端声明仍需启动环境 `GODEBUG=http2xconnect=1`。上游默认自动选择：WSS 优先 H2，ALPN/SETTINGS 不支持时兼容 H1；普通 WS 直接 H1，显式注入 NewClientH2C 可使用 H2C。认证拒绝、证书错误、超时等不触发协议降级。不再增加 WebSocketProxy.HTTP2 配置。Service 默认代理客户端共享连接池与有界能力缓存，Cookie Jar 关闭；Stop 清理其空闲池。显式 SetProxyWebSocketDialer 保持 H1 网络策略。
 
 依赖已发布 HTTP v1.5.14 与 Service v1.5.48，独立发布验证使用 GOWORK=off。TLS 对照方法与原始数据见 http/testdata/websocket/20261022-tls-compare.md。
+
+## External addressing / 外部地址（v1.5.21）
+
+Business ingress `Config.ExternalAddress` and management `Config.AdminExternalAddress` are independent HTTP `ExternalAddressPolicy` values. Empty lists trust no proxies, including private and loopback peers. ClientIPPolicy does not confer external-address trust. Specify actual immediate proxy IP/CIDR; preserve the public request Host for business routing. Each trusted relay must overwrite single-value paired headers rather than append lists.
+
+```yaml
+ExternalAddress:
+  TrustedProxies: ["192.0.2.10/32"]
+AdminExternalAddress:
+  TrustedProxies: ["192.0.2.20/32"]
+```
+
+For a same-machine admin proxy, explicitly choose its actual source, e.g. `127.0.0.1/32` or `::1/128`; neither is enabled implicitly. The proxy must overwrite X-Forwarded-Host and X-Forwarded-Proto from its trusted ingress state (or use X-Host/X-Scheme). Both groups, when present, must agree. Forwarded alone is unsupported. Invalid trusted metadata returns 400; untrusted forwarding headers cannot alter security decisions.
+
+The independent AdminHandler pins the HTTP result before dispatch. Login and subsequent Cookie-authenticated writes compare Origin structurally with this result; Cookie Secure uses its external HTTPS flag. Origin is never rewritten or invented, no X-Origin or domain bypass is introduced, CSRF tokens remain required on writes. Missing Origin retains existing non-browser compatibility; empty/null, lists, duplicates, credentials and URL paths/queries/fragments are rejected. Actual request TLS is never fabricated. API-key and affinity RPC authentication remain independent of browser addressing.
+
+TLS-front-proxy deployments must explicitly configure management trust on upgrade. A direct HTTP IP:port management connection remains supported. Recreate Manager to change its management policy; business policy is restored on GatewayApp.Reload from the manager configuration.
+
+Release dependencies: HTTP v1.5.15, Discover v1.5.18 and Service v1.5.49; GOWORK=off without local replacements.

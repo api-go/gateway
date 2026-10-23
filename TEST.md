@@ -332,3 +332,14 @@ BenchmarkPublishedHostQuota-16    	  221820	      5252 ns/op	    3633 B/op	     
 2026-10-23 独立发布检查：`GOWORK=off GATEWAY_REDIS_INTEGRATION=1`，默认和启动 `GODEBUG=http2xconnect=1` 两种模式的全量 test-v/count1、vet、race/count1、benchmark 均通过。使用现有 Redis 的隔离测试前缀，既有服务前后 PONG，未启停用户 Redis。H2 模式实际执行 `TestGatewayWebSocketHTTP2TLS/h2-h1` 与 `h2-h2`；默认模式跳过该需启动声明的专项，既有 H1 回归仍执行。独立进程可靠性大矩阵及主动 Redis 进程故障测试未启用，不计入本次覆盖。
 
 `ai/tools/getExports` 不可用，以 `GOWORK=off go doc -all ./core` 与导出源码核对；本版本无新增或移除 Go API。Apple M3 Max 本次 APIKeyRead / PublishedHostQuota / MonitorCheck：默认 35852 / 4711 / 6446051 ns/op，H2 启动模式 39653 / 5253 / 5097200 ns/op；此基准不构成 H1/H2 网关吞吐对照。
+
+## External addressing validation (2026-10-23)
+- Real TLS frontend → HTTP management listener: login succeeds with Secure Cookie, cross-origin logout fails and same-origin CSRF logout succeeds.
+- Independent admin trust (business trust does not transfer), untrusted loopback spoof, partial pairs, null/duplicate/path Origin rejection.
+- Existing direct-IP management, sessions, API-key, HTTP/2, H2C and WebSocket regression suites retained.
+- API review fallback: go doc and exported sources, getExports unavailable.
+
+- DL development verification before release used temporary replace mappings with GOWORK=off and server-side Go build. Real browser https://gateway-dev.deeler.cn: login 200, Secure/HttpOnly Cookie, authenticated POST /api/check-host 200 without persistent configuration writes, cross-origin/null/path Origin logout 403, same-origin logout 200. Direct http://10.177.65.105:81 login/logout 200; network-peer spoofed X-Host/X-Scheme/X-Forwarded-*/Forwarded login 403. Management trust explicitly set to the actual in-container proxy source 127.0.0.1/32; no implicit loopback/private trust.
+- Released-dependency validation uses HTTP v1.5.15 / Discover v1.5.18 / Service v1.5.49, GOWORK=off, no replace. Full tests, benchmarks and race validation.
+
+- Released-dependency benchmarks (Apple M3 Max): API-key read 38413 ns/op; NewGatewayApp 19.78 ns/op; limiter 1418 ns/op; published Host quota 6721 ns/op; monitor check 5343776 ns/op.

@@ -182,6 +182,9 @@ func (g *GatewayApp) Reload() error {
 	if err := g.manager.server.SetClientIPPolicy(g.manager.config.ClientIP); err != nil {
 		return err
 	}
+	if err := g.manager.server.SetExternalAddressPolicy(g.manager.config.ExternalAddress); err != nil {
+		return err
+	}
 	if err := g.manager.Reconcile(); err != nil {
 		return err
 	}

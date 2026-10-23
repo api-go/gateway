@@ -6,6 +6,7 @@ import (
 	"apigo.cc/go/discover"
 	"apigo.cc/go/encoding"
 	"apigo.cc/go/file"
+	gohttp "apigo.cc/go/http"
 	"apigo.cc/go/log"
 	"apigo.cc/go/redis"
 	"apigo.cc/go/safe"
@@ -33,6 +34,7 @@ const stateCAS = `local current=redis.call('GET',KEYS[1]) or ''; if current~=ARG
 
 type activeHosts struct{ hosts map[string]HostRecord }
 type Manager struct {
+	adminExternalAddress *gohttp.ExternalAddressResolver
 	affinity             *affinityStore
 	affinityStop         context.CancelFunc
 	affinityDone         chan struct{}
@@ -106,6 +108,13 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 	if err := server.SetClientIPPolicy(config.ClientIP); err != nil {
 		return nil, err
 	}
+	adminResolver, err := gohttp.NewExternalAddressResolver(config.AdminExternalAddress)
+	if err != nil {
+		return nil, err
+	}
+	if err := server.SetExternalAddressPolicy(config.ExternalAddress); err != nil {
+		return nil, err
+	}
 	if err := file.Mkdir(config.DataDir); err != nil {
 		return nil, err
 	}
@@ -116,7 +125,7 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 		config.Redis = server.Config.Register
 	}
 	installAffinityBalancer()
-	m := &Manager{config: config, server: server, state: State{Format: 1, Hosts: map[string]HostRecord{}}, applied: -1, status: NodeStatus{ID: config.NodeID, Versions: map[string]int64{}}}
+	m := &Manager{adminExternalAddress: adminResolver, config: config, server: server, state: State{Format: 1, Hosts: map[string]HostRecord{}}, applied: -1, status: NodeStatus{ID: config.NodeID, Versions: map[string]int64{}}}
 	if config.Redis != "" {
 		m.rd = redis.GetRedis(config.Redis, log.DefaultLogger)
 
@@ -175,7 +184,7 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 		return nil, err
 	}
 	m.mu.Lock()
-	err := m.loadLocked()
+	err = m.loadLocked()
 	if err != nil && m.rd != nil {
 		cacheName := filepath.Join(m.config.DataDir, "state.json")
 		if cached, cacheErr := file.ReadBytes(cacheName); cacheErr == nil && len(cached) <= maxStateBytes {
@@ -211,16 +220,12 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 		service.RelayClientIP(request)
 		// The HTTP client supports an explicit Host header; retain the public host
 		// when the discovery target is an internal node address.
-		scheme := "http"
-		if request.TLS != nil {
-			scheme = "https"
+		address := request.ExternalAddress()
+		if err := address.RelayHeaders(request.Request.Header); err != nil {
+			response.WriteHeader(http.StatusBadRequest)
+			return true
 		}
-		request.Request.Header.Set("Host", request.Host)
-		request.Request.Header.Set("X-Host", request.Host)
-		request.Request.Header.Set("X-Scheme", scheme)
-		request.Request.Header.Set("X-Forwarded-Host", request.Host)
-		request.Request.Header.Set("X-Forwarded-Proto", scheme)
-		request.Request.Header.Del("Forwarded")
+		request.Request.Header.Set("Host", address.Host)
 		request.Request.Header.Del("X-User-Id")
 		request.Request.Header.Del("X-Discover-From-App")
 		request.Request.Header.Del("X-Discover-From-Node")
@@ -514,7 +519,7 @@ func (m *Manager) prepareHost(host Host, version int64) (*service.PreparedHostPo
 				return true
 			}
 		}
-		if adaptive && host.HTTPS.Redirect != "off" && request.TLS == nil && m.matchCertificate(normalizedHost(request.Host)) != nil {
+		if adaptive && host.HTTPS.Redirect != "off" && !request.ExternalAddress().IsHTTPS() && m.matchCertificate(normalizedHost(request.Host)) != nil {
 			if target, available := m.httpsTarget(request.Host); available {
 				http.Redirect(response.Writer, request.Request, "https://"+target+request.URL.RequestURI(), http.StatusPermanentRedirect)
 				return true

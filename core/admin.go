@@ -3,6 +3,7 @@ package gateway
 import (
 	"apigo.cc/go/cast"
 	"apigo.cc/go/encoding"
+	gohttp "apigo.cc/go/http"
 	"apigo.cc/go/safe"
 	"crypto/subtle"
 	"embed"
@@ -13,7 +14,6 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 )
@@ -62,19 +62,7 @@ func readJSON(writer http.ResponseWriter, request *http.Request, value any) erro
 	return cast.UnmarshalJSON(data, value)
 }
 func sameOrigin(request *http.Request) bool {
-	origin := request.Header.Get("Origin")
-	if origin == "" {
-		return true
-	}
-	parsed, err := url.Parse(origin)
-	if err != nil {
-		return false
-	}
-	scheme := "http"
-	if request.TLS != nil {
-		scheme = "https"
-	}
-	return parsed.Scheme == scheme && strings.EqualFold(parsed.Host, request.Host)
+	return gohttp.RequestExternalAddress(request).SameOrigin(request.Header)
 }
 func (m *Manager) login(writer http.ResponseWriter, request *http.Request) {
 	if request.Method != "POST" || !sameOrigin(request) {
@@ -118,7 +106,7 @@ func (m *Manager) login(writer http.ResponseWriter, request *http.Request) {
 		http.Error(writer, "session store unavailable", 503)
 		return
 	}
-	http.SetCookie(writer, &http.Cookie{Name: "gateway-admin", Value: token, HttpOnly: true, Secure: request.TLS != nil, SameSite: http.SameSiteStrictMode, Path: "/", MaxAge: 28800})
+	http.SetCookie(writer, &http.Cookie{Name: "gateway-admin", Value: token, HttpOnly: true, Secure: gohttp.RequestExternalAddress(request).IsHTTPS(), SameSite: http.SameSiteStrictMode, Path: "/", MaxAge: 28800})
 	writeJSON(writer, 200, map[string]any{"csrf": session.CSRF})
 }
 func (m *Manager) authenticate(request *http.Request) (adminSession, bool) {
@@ -143,6 +131,11 @@ func (m *Manager) AdminHandler() http.Handler {
 	assets, _ := fs.Sub(adminFiles, "web")
 	static := http.FileServer(http.FS(assets))
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if address := m.adminExternalAddress.Prepare(request); address.Err != nil {
+			http.Error(writer, "invalid external address", http.StatusBadRequest)
+			return
+		}
+
 		writer.Header().Set("Cache-Control", "no-store")
 		writer.Header().Set("X-Content-Type-Options", "nosniff")
 		writer.Header().Set("X-Frame-Options", "DENY")
