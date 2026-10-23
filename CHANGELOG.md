@@ -1,3 +1,6 @@
+## [v1.5.22] - 2026-10-23
+- 默认业务入口重建外部地址，管理入口自动接收既有 Request-ID 内部续传；HTTPS 自代理登录无需额外可信来源配置，严格策略仍可选。
+
 ## [v1.5.21] - 2026-10-23
 - Independent business/admin direct-peer trust and shared HTTP external-address parsing; HTTPS reverse-proxy login, Secure Cookie and write-origin validation use one snapshot.
 

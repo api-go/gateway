@@ -108,6 +108,11 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 	if err := server.SetClientIPPolicy(config.ClientIP); err != nil {
 		return nil, err
 	}
+	// Gateway is the public boundary; internal Service/Admin handlers use the
+	// Request-ID relay default, while this boundary always regenerates by default.
+	if config.ExternalAddress.Mode == "" && len(config.ExternalAddress.TrustedProxies) == 0 {
+		config.ExternalAddress.Mode = "direct"
+	}
 	adminResolver, err := gohttp.NewExternalAddressResolver(config.AdminExternalAddress)
 	if err != nil {
 		return nil, err

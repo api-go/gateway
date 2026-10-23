@@ -13,8 +13,8 @@ import (
 
 // Config configures the gateway and its optional separate management listener.
 type Config struct {
-	ExternalAddress      gohttp.ExternalAddressPolicy // Business ingress only; empty trusts no proxies.
-	AdminExternalAddress gohttp.ExternalAddressPolicy // Independent management-listener trust.
+	ExternalAddress      gohttp.ExternalAddressPolicy // Business ingress defaults to direct; optional front-proxy policy.
+	AdminExternalAddress gohttp.ExternalAddressPolicy // Defaults to internal Request-ID relay; optional strict policy.
 	MaxAffinityEntries   int                          // Default 1,000,000; automatic maps never silently evict live sessions.
 	AffinityAdvertise    string                       // Optional reachable management base URL for peer snapshots.
 	Redis                string

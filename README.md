@@ -44,7 +44,7 @@ gateway:
 
 `AdminDisabled: true` 关闭后台监听；AdminListen 可覆盖地址或端口，包括 `127.0.0.1:81`。修改管理监听或开关后重启服务。独立管理监听使用 HTTP，可按需要经具有 HTTPS 的受控入口访问。低端口绑定要求取决于系统权限，无法绑定会报错，不会静默换端口。旧工作区的多账号数据不再用于登录，需要运行上述命令设置单一密码。
 
-发布版使用已发布的 Service v1.5.47 和 Discover v1.5.17，不含本地 replace；可在不保留相邻模块 checkout 的情况下独立编译。根目录 CLI 保持兼容，可复用的 Go API 位于 `apigo.cc/go/gateway/core`。
+发布版使用已发布的 Service v1.5.50 和 Discover v1.5.19，不含本地 replace；可在不保留相邻模块 checkout 的情况下独立编译。根目录 CLI 保持兼容，可复用的 Go API 位于 `apigo.cc/go/gateway/core`。
 
 ## 会话保持与节点同步
 
@@ -361,9 +361,9 @@ Gateway 代理入口支持 RFC 8441；Go/x/net 的服务端声明仍需启动环
 
 依赖已发布 HTTP v1.5.14 与 Service v1.5.48，独立发布验证使用 GOWORK=off。TLS 对照方法与原始数据见 http/testdata/websocket/20261022-tls-compare.md。
 
-## External addressing / 外部地址（v1.5.21）
+## External addressing / 外部地址（v1.5.22）
 
-Business ingress `Config.ExternalAddress` and management `Config.AdminExternalAddress` are independent HTTP `ExternalAddressPolicy` values. Empty lists trust no proxies, including private and loopback peers. ClientIPPolicy does not confer external-address trust. Specify actual immediate proxy IP/CIDR; preserve the public request Host for business routing. Each trusted relay must overwrite single-value paired headers rather than append lists.
+Business ingress `Config.ExternalAddress` and management `Config.AdminExternalAddress` are independent HTTP `ExternalAddressPolicy` values. Default behavior (v1.5.22): business ingress uses direct mode and regenerates address headers, including requests with client-provided IDs. The independent AdminHandler defaults to the existing internal Request-ID relay convention, so Gateway HTTPS → HTTP admin self-proxy works with no configuration. Optional CIDR policies can strengthen either entry. Preserve the public request Host for business routing. Each trusted relay must overwrite single-value paired headers rather than append lists.
 
 ```yaml
 ExternalAddress:
@@ -372,10 +372,16 @@ AdminExternalAddress:
   TrustedProxies: ["192.0.2.20/32"]
 ```
 
-For a same-machine admin proxy, explicitly choose its actual source, e.g. `127.0.0.1/32` or `::1/128`; neither is enabled implicitly. The proxy must overwrite X-Forwarded-Host and X-Forwarded-Proto from its trusted ingress state (or use X-Host/X-Scheme). Both groups, when present, must agree. Forwarded alone is unsupported. Invalid trusted metadata returns 400; untrusted forwarding headers cannot alter security decisions.
+The normal Gateway self-proxy needs no management trust configuration. For optional explicit source restrictions choose the actual proxy source, e.g. `127.0.0.1/32` or `::1/128`. The proxy must overwrite X-Forwarded-Host and X-Forwarded-Proto from its trusted ingress state (or use X-Host/X-Scheme). Both groups, when present, must agree. Forwarded alone is unsupported. Invalid trusted metadata returns 400; untrusted forwarding headers cannot alter security decisions.
 
 The independent AdminHandler pins the HTTP result before dispatch. Login and subsequent Cookie-authenticated writes compare Origin structurally with this result; Cookie Secure uses its external HTTPS flag. Origin is never rewritten or invented, no X-Origin or domain bypass is introduced, CSRF tokens remain required on writes. Missing Origin retains existing non-browser compatibility; empty/null, lists, duplicates, credentials and URL paths/queries/fragments are rejected. Actual request TLS is never fabricated. API-key and affinity RPC authentication remain independent of browser addressing.
 
-TLS-front-proxy deployments must explicitly configure management trust on upgrade. A direct HTTP IP:port management connection remains supported. Recreate Manager to change its management policy; business policy is restored on GatewayApp.Reload from the manager configuration.
+Gateway self-proxy TLS termination works by default; a separate third-party frontend can use the existing internal relay contract or optionally configure its source. A direct HTTP IP:port management connection remains supported. Recreate Manager to change its management policy; business policy is restored on GatewayApp.Reload from the manager configuration.
 
-Release dependencies: HTTP v1.5.15, Discover v1.5.18 and Service v1.5.49; GOWORK=off without local replacements.
+Release dependencies: HTTP v1.5.16, Discover v1.5.19 and Service v1.5.50; GOWORK=off without local replacements.
+
+## 默认可用 / Zero-configuration default (v1.5.22)
+
+Controlled Gateway → Service/Discover chains preserve the first external address by the existing Request-ID convention; no per-service trusted-source configuration is required. The public Gateway business boundary defaults to direct and overwrites client address headers regardless of client ID. Its own proxy creates/relays Request-ID, and the independent management handler consumes that context by default for same-origin checks and Secure Cookie. CSRF, Origin preservation and RPC authentication remain intact.
+
+Optional `ExternalAddress.Mode` and `AdminExternalAddress.Mode`: legacy (internal default), direct (always use connection), trusted (require explicit direct-peer addresses). An address list with omitted Mode retains the released explicit-policy behavior. Settings can be left entirely absent for the normal self-proxy topology. Released dependencies need no local replace.

@@ -136,3 +136,65 @@ func TestAdminTrustIndependentAndMalformedHeaders(t *testing.T) {
 		}
 	}
 }
+
+// Exercise the actual Gateway business handler as the TLS frontend. Neither
+// management nor downstream services require any external-address configuration.
+func TestDefaultGatewayHTTPSAdminWithoutTrustConfiguration(t *testing.T) {
+	m, server, _ := manager(t)
+	backend := httptest.NewServer(m.AdminHandler())
+	defer backend.Close()
+	server.Host("*").Proxy(0, "/*", backend.URL+"/*")
+	frontend := httptest.NewTLSServer(server.Handler())
+	defer frontend.Close()
+	client := frontend.Client()
+	send := func(path, origin, csrf string, cookie *http.Cookie) *http.Response {
+		t.Helper()
+		body := "{}"
+		if path == "/api/login" {
+			body = `{"password":"gateway-test-password"}`
+		}
+		r, _ := http.NewRequest("POST", frontend.URL+path, strings.NewReader(body))
+		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("Origin", origin)
+		r.Header.Set("X-CSRF-Token", csrf)
+		// The public boundary regenerates metadata even when a client supplies an ID.
+		r.Header.Set("X-Request-ID", "client-id")
+		r.Header.Set("X-Host", "ignored.example")
+		r.Header.Set("X-Scheme", "http")
+		r.Header.Set("X-Forwarded-Host", "other.example")
+		r.Header.Set("X-Forwarded-Proto", "http")
+		if cookie != nil {
+			r.AddCookie(cookie)
+		}
+		response, err := client.Do(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return response
+	}
+	response := send("/api/login", frontend.URL, "", nil)
+	data, _ := io.ReadAll(response.Body)
+	response.Body.Close()
+	if response.StatusCode != 200 {
+		t.Fatalf("default login %d %s", response.StatusCode, data)
+	}
+	cookies := response.Cookies()
+	if len(cookies) == 0 || !cookies[0].Secure {
+		t.Fatal("missing Secure Cookie")
+	}
+	result, err := cast.FromJSON[map[string]any](data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	csrf := cast.String(result["csrf"])
+	response = send("/api/logout", "https://evil.example", csrf, cookies[0])
+	response.Body.Close()
+	if response.StatusCode != 403 {
+		t.Fatal("cross-origin accepted", response.StatusCode)
+	}
+	response = send("/api/logout", frontend.URL, csrf, cookies[0])
+	response.Body.Close()
+	if response.StatusCode != 200 {
+		t.Fatal("default write", response.StatusCode)
+	}
+}

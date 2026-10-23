@@ -343,3 +343,11 @@ BenchmarkPublishedHostQuota-16    	  221820	      5252 ns/op	    3633 B/op	     
 - Released-dependency validation uses HTTP v1.5.15 / Discover v1.5.18 / Service v1.5.49, GOWORK=off, no replace. Full tests, benchmarks and race validation.
 
 - Released-dependency benchmarks (Apple M3 Max): API-key read 38413 ns/op; NewGatewayApp 19.78 ns/op; limiter 1418 ns/op; published Host quota 6721 ns/op; monitor check 5343776 ns/op.
+
+## v1.5.22 default relay validation
+- Actual TLS Gateway business handler → HTTP independent AdminHandler, both with no external-address configuration: login with Secure Cookie, cross-origin write rejection and same-origin CSRF logout. Client-supplied ID and conflicting address headers are overwritten at the public boundary. Optional explicit source restrictions remain covered.
+- 开发验收使用 GOWORK=off 与显式 http/discover/service replace；发布复验使用正式 HTTP v1.5.16 / Discover v1.5.19 / Service v1.5.50。
+
+- Development validation passed: GOWORK=off go test -v ./..., go test -bench=. ./..., go test -race ./... and go vet ./.... Apple M3 Max: API-key read 37136 ns/op; limiter 1352 ns/op; published Host quota 6027 ns/op; monitor check 5862705 ns/op. HTTP is tested independently; downstream modules use documented explicit local replace mappings.
+
+- v1.5.22 发布复验：正式 HTTP v1.5.16、Discover v1.5.19、Service v1.5.50，GOWORK=off、无 replace；全量测试、benchmark 和 go vet 通过。API 用 go doc -all ./core 与导出源码核对（getExports 不可用）。
