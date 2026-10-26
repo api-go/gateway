@@ -146,3 +146,7 @@ Release dependencies: HTTP v1.5.16, Discover v1.5.19 and Service v1.5.50; GOWORK
 Controlled Gateway → Service/Discover chains preserve the first external address by the existing Request-ID convention; no per-service trusted-source configuration is required. The public Gateway business boundary defaults to direct and overwrites client address headers regardless of client ID. Its own proxy creates/relays Request-ID, and the independent management handler consumes that context by default for same-origin checks and Secure Cookie. CSRF, Origin preservation and RPC authentication remain intact.
 
 Optional `ExternalAddress.Mode` and `AdminExternalAddress.Mode`: legacy (internal default), direct (always use connection), trusted (require explicit direct-peer addresses). An address list with omitted Mode retains the released explicit-policy behavior. Settings can be left entirely absent for the normal self-proxy topology. Released dependencies need no local replace.
+
+## AES-GCM configuration compatibility
+
+Released dependencies select crypto v1.5.9. Shared Symmetric.Decrypt/DecryptBytes authenticate `12-byte IV || ciphertext || 16-byte tag` first, then try the configured legacy IV. Existing APIs remain unchanged. Prefer EncryptBytesAutoIV for new data and upgrade readers before enabling writers. CBC/SM4 formats are unchanged.

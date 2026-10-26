@@ -351,3 +351,50 @@ BenchmarkPublishedHostQuota-16    	  221820	      5252 ns/op	    3633 B/op	     
 - Development validation passed: GOWORK=off go test -v ./..., go test -bench=. ./..., go test -race ./... and go vet ./.... Apple M3 Max: API-key read 37136 ns/op; limiter 1352 ns/op; published Host quota 6027 ns/op; monitor check 5862705 ns/op. HTTP is tested independently; downstream modules use documented explicit local replace mappings.
 
 - v1.5.22 发布复验：正式 HTTP v1.5.16、Discover v1.5.19、Service v1.5.50，GOWORK=off、无 replace；全量测试、benchmark 和 go vet 通过。API 用 go doc -all ./core 与导出源码核对（getExports 不可用）。
+
+## v1.5.23 发布验证（2026-10-26）
+
+GOWORK=off，正式依赖 crypto v1.5.9，无 replace。`go test -v ./...`、`go test -bench=. ./...`、`go vet ./...`、`go mod verify` 通过。使用 `go doc` 与源码交叉核对 API，替代 getExports。现有回归覆盖本模块业务；新旧 GCM 格式、认证失败和性能基准见 crypto v1.5.9。
+
+跳过的外部条件场景：
+- --- SKIP: TestAffinityLegacyScopeCompatibility (0.00s)
+- --- SKIP: TestAffinityLiveConnectionsAcrossRoutingChange (0.00s)
+- --- SKIP: TestAffinityLVSWorker (0.00s)
+- --- SKIP: TestAffinityRandomGatewayLVS (0.00s)
+- --- SKIP: TestAffinityReliability (0.00s)
+- --- SKIP: TestManualAffinityPathsMethodsAndBackups (0.00s)
+- --- SKIP: TestAutomaticAffinityCheckpointAndCapacity (0.00s)
+- --- SKIP: TestAffinityExpansionAndHashMovement (0.00s)
+- --- SKIP: TestGradualAffinityShardCluster (0.00s)
+- --- SKIP: TestGradualSnapshotCapacityCountsSessionBindings (0.00s)
+- --- SKIP: TestAffinitySnapshotReplayAndPeerAuthentication (0.00s)
+- --- SKIP: TestAffinityAcrossManagersAndSources (0.00s)
+- --- SKIP: TestAffinityHTTPAndWebSocket (0.00s)
+- --- SKIP: TestRedisAlertUsesThirdSharedSample (0.00s)
+- --- SKIP: TestAPIKeyClusterRevocation (0.00s)
+- --- SKIP: TestGateway (0.00s)
+- --- SKIP: TestCertificateLibraryClusterConvergence (0.00s)
+- --- SKIP: TestCertificateAutomaticSharedKeyConcurrencyAndRestart (0.00s)
+- --- SKIP: TestClusterSnapshotAndKeyRecovery (0.00s)
+- --- SKIP: TestRedisAffinitySharedMapping (0.00s)
+- --- SKIP: TestExplicitKeyRecoveryStaysExternal (0.00s)
+- --- SKIP: TestClusterCASConvergenceDeletionAndSharedQuotas (0.00s)
+- --- SKIP: TestClusterMissingStateRetainsCacheAcrossRestart (0.00s)
+- --- SKIP: TestClusterAdministratorPasswordSharedAndReset (0.00s)
+- --- SKIP: TestRedisHourlyCountersPreserveLegacyAndIncrementOnce (0.00s)
+- --- SKIP: TestRedisCompactRingAndAtomicCounters (0.00s)
+- --- SKIP: TestMonitorPeriodRecentResults/redis (0.00s)
+- --- SKIP: TestGatewayDiscoveryClientAndImmediateMonitor (0.00s)
+- --- SKIP: TestRegistryReadOnlyIncludesUnreferencedAndExpiredNodes (0.00s)
+- --- SKIP: TestMonitorClusterLeaseAndSharedHistory (0.00s)
+- --- SKIP: TestRedisOutageRetainsTrafficAndRecovers (0.00s)
+- --- SKIP: TestGatewayWebSocketHTTP2TLS (0.00s)
+
+基准结果：
+```text
+BenchmarkAPIKeyRead-16                	   32738	     35569 ns/op
+BenchmarkNewGatewayApp-16             	56115848	        19.50 ns/op	      64 B/op	       1 allocs/op
+BenchmarkLimiterIPWindow-16           	  900435	      1328 ns/op	    1305 B/op	      21 allocs/op
+BenchmarkPublishedHostQuota-16        	  184228	      6381 ns/op	    3856 B/op	      96 allocs/op
+BenchmarkMonitorCheck-16              	     201	   5964082 ns/op
+```

@@ -3,23 +3,23 @@ module apigo.cc/go/gateway
 go 1.25.0
 
 require (
-	apigo.cc/go/api v1.5.20
+	apigo.cc/go/api v1.5.21
 	apigo.cc/go/cast v1.5.8
 	apigo.cc/go/config v1.5.8
-	apigo.cc/go/crypto v1.5.8
-	apigo.cc/go/discover v1.5.19
+	apigo.cc/go/crypto v1.5.9
+	apigo.cc/go/discover v1.5.20
 	apigo.cc/go/encoding v1.5.8
 	apigo.cc/go/file v1.5.9
 	apigo.cc/go/http v1.5.16
 	apigo.cc/go/js v1.5.17
 	apigo.cc/go/log v1.5.17
 	apigo.cc/go/rand v1.5.4
-	apigo.cc/go/redis v1.5.20
+	apigo.cc/go/redis v1.5.21
 	apigo.cc/go/safe v1.5.4
-	apigo.cc/go/service v1.5.50
+	apigo.cc/go/service v1.5.51
 	apigo.cc/go/shell v1.5.8
-	apigo.cc/go/starter v1.5.13
-	apigo.cc/go/task v1.5.14
+	apigo.cc/go/starter v1.5.14
+	apigo.cc/go/task v1.5.15
 	apigo.cc/go/timer v1.5.0
 	github.com/gomodule/redigo v1.9.3
 	github.com/gorilla/websocket v1.5.3
