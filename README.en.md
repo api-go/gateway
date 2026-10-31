@@ -150,3 +150,7 @@ Optional `ExternalAddress.Mode` and `AdminExternalAddress.Mode`: legacy (interna
 ## AES-GCM configuration compatibility
 
 Released dependencies select crypto v1.5.9. Shared Symmetric.Decrypt/DecryptBytes authenticate `12-byte IV || ciphertext || 16-byte tag` first, then try the configured legacy IV. Existing APIs remain unchanged. Prefer EncryptBytesAutoIV for new data and upgrade readers before enabling writers. CBC/SM4 formats are unchanged.
+
+## v1.5.24
+
+已升级服务发现依赖至 Discover v1.5.21、Service v1.5.52、Redis v1.5.22，以获得 Redis 长时间故障后的异步恢复。

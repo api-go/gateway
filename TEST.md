@@ -398,3 +398,8 @@ BenchmarkLimiterIPWindow-16           	  900435	      1328 ns/op	    1305 B/op	 
 BenchmarkPublishedHostQuota-16        	  184228	      6381 ns/op	    3856 B/op	      96 allocs/op
 BenchmarkMonitorCheck-16              	     201	   5964082 ns/op
 ```
+
+## v1.5.24 发布验证（2026-10-31）
+
+- GOWORK=off 使用正式依赖 Discover v1.5.21、Redis v1.5.22、Service v1.5.52；全量测试、go vet 和 Gateway core race 通过。
+- Gateway core race：68.172s；无源码依赖替换进入正式 go.mod。

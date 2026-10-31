@@ -389,3 +389,7 @@ Optional `ExternalAddress.Mode` and `AdminExternalAddress.Mode`: legacy (interna
 ## AES-GCM 配置密文兼容
 
 正式依赖选用 crypto v1.5.9，共享 `Symmetric.Decrypt/DecryptBytes` 先认证 `[12 字节 IV][密文][16 字节 tag]`，再使用配置 IV 兼容旧格式；现有 API 不变。新数据推荐 `EncryptBytesAutoIV`，先升级接收端再启用新写入。此能力针对 AES-GCM，不改变 CBC/SM4 格式。
+
+## v1.5.24
+
+已升级服务发现依赖至 Discover v1.5.21、Service v1.5.52、Redis v1.5.22，以获得 Redis 长时间故障后的异步恢复。
