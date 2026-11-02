@@ -492,6 +492,10 @@ func (m *Manager) prepareHost(host Host, version int64) (*service.PreparedHostPo
 		}
 		policy.Certificate = &certificate
 	}
+	acl, err := compileACL(host.ACL)
+	if err != nil {
+		return nil, err
+	}
 	limits := make([]*compiledLimit, 0, len(host.Limits))
 	for _, rule := range host.Limits {
 		compiled, err := compileLimit(rule)
@@ -508,6 +512,15 @@ func (m *Manager) prepareHost(host Host, version int64) (*service.PreparedHostPo
 		if !host.Enabled {
 			response.WriteHeader(http.StatusServiceUnavailable)
 			response.WriteString("Host disabled")
+			return true
+		}
+		decision := acl.evaluate(request, func(decision ACLDecision) {
+			m.runtimeEvent(Event{Time: time.Now(), Type: "acl", HostID: host.ID, RuleID: decision.RuleID, Action: "observe", Version: version, Message: decision.Error})
+		})
+		if !decision.Allowed {
+			m.runtimeEvent(Event{Time: time.Now(), Type: "acl", HostID: host.ID, RuleID: decision.RuleID, Action: "reject", Version: version, Message: decision.Error})
+			response.WriteHeader(http.StatusForbidden)
+			response.WriteString("access denied")
 			return true
 		}
 		for _, decision := range m.limiter.evaluate(host.ID, limits, request, time.Now()) {
@@ -562,6 +575,9 @@ func (m *Manager) SaveDraft(host Host, expected int64, actor string) (HostRecord
 	if err := m.loadLocked(); err != nil {
 		return HostRecord{}, err
 	}
+	if _, deleted := m.state.Trash[host.ID]; deleted {
+		return HostRecord{}, fmt.Errorf("Host is in trash; restore it before editing")
+	}
 	record := m.state.Hosts[host.ID]
 	if record.Revision != expected {
 		return HostRecord{}, ErrConflict
@@ -571,6 +587,16 @@ func (m *Manager) SaveDraft(host Host, expected int64, actor string) (HostRecord
 	}
 	if err := m.prepareMonitorSecrets(&host, record.Draft); err != nil {
 		return HostRecord{}, err
+	}
+	for index := range host.ACL {
+		if host.ACL[index].ID == "" {
+			host.ACL[index].ID = "acl-" + encoding.Hex(safe.MakeSafeToken(12))
+		}
+	}
+	for index := range host.Limits {
+		if host.Limits[index].ID == "" {
+			host.Limits[index].ID = "limit-" + encoding.Hex(safe.MakeSafeToken(12))
+		}
 	}
 	if err := validateHost(host); err != nil {
 		return HostRecord{}, err
@@ -672,8 +698,13 @@ func (m *Manager) Delete(id string, expected int64, actor string) error {
 		return ErrConflict
 	}
 	next := cloneState(m.state)
+	if next.Trash == nil {
+		next.Trash = map[string]DeletedHost{}
+	}
+	record.Revision++
+	next.Trash[id] = DeletedHost{Record: record, DeletedAt: time.Now(), DeletedBy: actor}
 	delete(next.Hosts, id)
-	addAudit(&next, Event{Type: "delete", HostID: id, Actor: actor, Action: "delete"})
+	addAudit(&next, Event{Type: "delete", HostID: id, Actor: actor, Action: "trash"})
 	if err := m.saveLocked(next); err != nil {
 		return err
 	}
@@ -884,7 +915,7 @@ func (m *Manager) validatePublicationLocked(host Host, version int64) error {
 		if input, err := m.monitorInput(host); err != nil {
 			return fmt.Errorf("监控设置：%w", err)
 		} else if host.Monitor.URL == "" && host.Enabled {
-			preview, err := m.Preview(input)
+			preview, err := m.preview(input, false)
 			if err != nil || preview.Type != "proxy" {
 				return fmt.Errorf("监控路径未匹配代理，请填写监控地址或调整路径")
 			}

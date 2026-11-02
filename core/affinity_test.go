@@ -6,6 +6,7 @@ import (
 	"apigo.cc/go/log"
 	"apigo.cc/go/redis"
 	"apigo.cc/go/service"
+	"apigo.cc/go/timer"
 	"context"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -41,26 +42,45 @@ func affinityUpstreams(t *testing.T) string {
 		t.Cleanup(server.Close)
 		discover.AddExternalApp(app, "1")
 		address := strings.TrimPrefix(server.URL, "http://")
-		affinityFixtureNode(app, address, 100)
-		t.Cleanup(func() { affinityFixtureNode(app, address, 0) })
+		affinityFixtureNode(t, app, address, 100)
+		t.Cleanup(func() { affinityFixtureNode(t, app, address, 0) })
 	}
 	return app
 }
 
-// Long workloads must register fixture heartbeats too: Discover periodically
+// Registry-backed workloads must register fixture heartbeats too: Discover periodically
 // refreshes its node view from Redis, just as it does in production.
-func affinityFixtureNode(app, address string, weight int) {
-	if os.Getenv("GATEWAY_AFFINITY_RELIABILITY") == "1" {
-		rd := redis.GetRedis("redis://127.0.0.1:6379/15", log.DefaultLogger)
-		if weight > 0 {
-			rd.Do("HSET", app, address, weight)
-			rd.Do("SETEX", app+"_"+address, 3600, "1")
-		} else {
-			rd.Do("HDEL", app, address)
-			rd.Do("DEL", app+"_"+address)
-		}
+func affinityFixtureNode(t testing.TB, app, address string, weight int) {
+	t.Helper()
+	if os.Getenv("GATEWAY_AFFINITY_RELIABILITY") != "1" && os.Getenv("GATEWAY_REDIS_INTEGRATION") != "1" {
+		discover.SetNode(app, address, weight)
+		return
 	}
-	discover.SetNode(app, address, weight)
+	rd := redis.GetRedis("redis://127.0.0.1:6379/15", log.DefaultLogger)
+	script := `redis.call('SETEX',KEYS[2],3600,'1'); redis.call('HSET',KEYS[1],ARGV[1],ARGV[2]); redis.call('PUBLISH','CH_'..KEYS[1],ARGV[1]..' '..ARGV[2]); return 1`
+	if weight <= 0 {
+		script = `redis.call('HDEL',KEYS[1],ARGV[1]); redis.call('DEL',KEYS[2]); redis.call('PUBLISH','CH_'..KEYS[1],ARGV[1]..' 0'); return 1`
+	}
+	if result := rd.Do("EVAL", script, 2, app, app+"_"+address, address, weight); result.Error != nil {
+		t.Fatal(result.Error)
+	}
+	// Observe the actual registry snapshot instead of racing its asynchronous refresh.
+	if err := timer.Retry(func() error {
+		rd.Do("PUBLISH", "CH_"+app, address+" "+fmt.Sprint(weight))
+		node := discover.GetAppNodes(app)[address]
+		if weight <= 0 && node == nil {
+			return nil
+		}
+		if weight > 0 && node != nil {
+			current, _, _ := node.State()
+			if current == weight {
+				return nil
+			}
+		}
+		return fmt.Errorf("fixture node %s has not converged", address)
+	}, timer.WithMaxRetries(200), timer.WithBackoff(20*time.Millisecond, 1)); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func affinityRequestFor(t *testing.T, manager *gateway.Manager, path, source, key string) *httptest.ResponseRecorder {
@@ -150,12 +170,9 @@ func benchmarkAffinityProxy(b *testing.B, mode string) {
 	if os.Getenv("GATEWAY_REDIS_INTEGRATION") != "1" {
 		b.Skip("requires Redis-backed Service lifecycle")
 	}
-	discover.Init()
 	app := "gateway-affinity-benchmark"
-	discover.AddExternalApp(app, "1")
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }))
 	defer upstream.Close()
-	discover.SetNode(app, strings.TrimPrefix(upstream.URL, "http://"), 100)
 	server := service.NewWebServer()
 	config := gateway.Config{DataDir: b.TempDir(), AdminDisabled: true}
 	if mode == "auto" || mode == "gradual" {
@@ -178,7 +195,9 @@ func benchmarkAffinityProxy(b *testing.B, mode string) {
 	}
 	startAffinityServer(b, server)
 	discover.AddExternalApp(app, "1")
-	discover.SetNode(app, strings.TrimPrefix(upstream.URL, "http://"), 100)
+	address := strings.TrimPrefix(upstream.URL, "http://")
+	affinityFixtureNode(b, app, address, 100)
+	b.Cleanup(func() { affinityFixtureNode(b, app, address, 0) })
 	host := baseHost()
 	host.Proxies = []service.ProxyRule{{Path: "/*", To: app + "/"}}
 	host.Affinity = gateway.AffinityConfig{Mode: mode, Source: "header", Name: "sessionid"}
@@ -201,7 +220,11 @@ func benchmarkAffinityProxy(b *testing.B, mode string) {
 	for b.Loop() {
 		request := httptest.NewRequest("GET", "http://example.test/", nil)
 		request.Header.Set("sessionid", "same")
-		m.Handler().ServeHTTP(httptest.NewRecorder(), request)
+		response := httptest.NewRecorder()
+		m.Handler().ServeHTTP(response, request)
+		if response.Code != http.StatusNoContent {
+			b.Fatalf("proxy benchmark requires successful upstream forwarding: %d %s", response.Code, response.Body.String())
+		}
 	}
 }
 

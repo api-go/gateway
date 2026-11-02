@@ -156,7 +156,14 @@ func validateCertificateStateKey(raw, key []byte) error {
 			return err
 		}
 	}
+	records := make([]HostRecord, 0, len(state.Hosts)+len(state.Trash))
 	for _, record := range state.Hosts {
+		records = append(records, record)
+	}
+	for _, item := range state.Trash {
+		records = append(records, item.Record)
+	}
+	for _, record := range records {
 		if err := check(record.Draft.Monitor.SealedHeaders); err != nil {
 			return err
 		}

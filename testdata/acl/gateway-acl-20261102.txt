@@ -1,0 +1,29 @@
+GATEWAY_REDIS_INTEGRATION=1 GOWORK=off go test -v ./...
+--- PASS: TestACLIngressPublishRollbackAndTrustedIP (0.13s)
+--- PASS: TestACLConditionsObserveAndQuota (0.08s)
+--- PASS: TestACLScriptAndValidation (0.08s)
+--- PASS: TestACLScriptConcurrentCancellationAndRecovery (0.11s)
+--- PASS: TestACLCompiledOwnsConditionsAndPreservesRequest (0.00s)
+--- PASS: TestACLRestartAndAPIKeyScriptBoundary (0.15s)
+--- PASS: TestACLIPv6AndScriptObserveFailure (0.00s)
+--- PASS: TestACLDoesNotChangeMonitorAndDirectUpstreamTests (0.07s)
+--- PASS: TestACLClusterConvergence (0.06s)
+--- SKIP: TestAffinityRandomGatewayLVS (0.00s)
+--- SKIP: TestAffinityReliability (0.00s)
+--- SKIP: TestGradualAffinityShardCluster (0.00s)
+--- SKIP: TestRedisOutageRetainsTrafficAndRecovers (0.00s)
+ok  	apigo.cc/go/gateway/core	15.051s
+
+GATEWAY_REDIS_INTEGRATION=1 GOWORK=off go test -race ./core -run TestACL -count=1
+ok  	apigo.cc/go/gateway/core	6.224s
+
+GOWORK=off go test -bench=. ./...
+goos: darwin
+goarch: arm64
+cpu: Apple M3 Max
+BenchmarkACL/none-16                  	1000000000	         0.3953 ns/op	       0 B/op	       0 allocs/op
+BenchmarkACL/conditions-16            	61502451	        18.81 ns/op	      16 B/op	       1 allocs/op
+BenchmarkACL/script-16                	  835101	      1340 ns/op	    3026 B/op	      43 allocs/op
+ok  	apigo.cc/go/gateway/core	17.910s
+
+ACL benchmark uses b.RunParallel, GOMAXPROCS=16. Values are aggregate wall time per operation, not individual request latency. Script benchmark timeout=100ms. Conditions benchmark matches path regex and IPv4 CIDR. No network/HTTP/logging cost is measured.

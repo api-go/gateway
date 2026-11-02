@@ -69,6 +69,7 @@ type Host struct {
 	Proxies       []service.ProxyRule
 	Rewrites      []service.RewriteRule
 	Statics       map[string]string
+	ACL           []ACLRule
 	Limits        []LimitRule
 }
 type HTTPSConfig struct {
@@ -116,6 +117,13 @@ type HostVersion struct {
 	Time    time.Time
 	Actor   string
 }
+
+// DeletedHost retains the complete Host until explicitly purged from the trash.
+type DeletedHost struct {
+	Record    HostRecord
+	DeletedAt time.Time
+	DeletedBy string
+}
 type Event struct {
 	Time    time.Time
 	Type    string
@@ -134,6 +142,7 @@ type State struct {
 	Certificates  map[string]CertificateRecord
 	ACME          *ACMESettings
 	Hosts         map[string]HostRecord
+	Trash         map[string]DeletedHost
 	Events        []Event
 }
 type NodeStatus struct {
@@ -197,7 +206,7 @@ func validateHost(host Host) error {
 		}
 		seen[domain] = true
 	}
-	if len(host.Proxies)+len(host.Rewrites)+len(host.Statics) > 1000 || len(host.Limits) > 100 {
+	if len(host.Proxies)+len(host.Rewrites)+len(host.Statics) > 1000 || len(host.Limits) > 100 || len(host.ACL) > 100 {
 		return fmt.Errorf("too many rules")
 	}
 	if host.HTTPS.Mode == "" {
@@ -221,6 +230,9 @@ func validateHost(host Host) error {
 	}
 	_, err := service.PrepareHostPolicy(service.HostPolicy{Proxies: host.Proxies, Rewrites: host.Rewrites, Statics: host.Statics})
 	if err != nil {
+		return err
+	}
+	if err := validateACL(host.ACL); err != nil {
 		return err
 	}
 	ids := map[string]bool{}
@@ -255,6 +267,11 @@ func validateCondition(condition MatchCondition) (*regexp.Regexp, error) {
 		return nil, fmt.Errorf("condition too long")
 	}
 	switch condition.Operator {
+	case "directory":
+		if condition.Source != "path" || !strings.HasPrefix(condition.Value, "/") {
+			return nil, fmt.Errorf("directory requires an absolute path")
+		}
+		return nil, nil
 	case "equals", "prefix", "contains", "exists":
 		return nil, nil
 	case "regex":

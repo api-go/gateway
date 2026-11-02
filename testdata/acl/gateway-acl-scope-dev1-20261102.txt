@@ -1,0 +1,40 @@
+Scoped ACL simplification — dev1 verification, 2026-11-02
+Build/runtime: golang:1.26.8-bookworm linux/amd64; alpine:3.24.2
+Build limits: 3 CPU / 3 GiB; isolated Redis 7.4.2-alpine, network none
+Source archive SHA256: 4ce4514aa137ea8405068ff381cdc27b546e3894f675eb132c53f51a615e3551
+Deployed binary SHA256: e1cc151d4d0fdad43f3b0317739b61efd6913f599ecd54e29146225d1e7b5da9
+Backup: /app/gateway/backup/gateway-acl-scope-20261102T043857Z
+Server evidence: /app/gateway/.upstream/acl-scope-dev-20261102/
+
+GATEWAY_REDIS_INTEGRATION=1 GOWORK=off go test -v ./...: PASS, core 11.541s
+GATEWAY_REDIS_INTEGRATION=1 GOWORK=off go test -bench=. ./...: PASS, core 29.073s
+GATEWAY_REDIS_INTEGRATION=1 GOWORK=off CGO_ENABLED=1 go test -race ./core -run TestACL -count=1: PASS, core 8.485s
+go mod verify / go vet: PASS
+GOWORK=off go doc -all ./core cross-checked with exported source
+node:24.21.0-bookworm node tests/acl-ui.cjs: PASS
+Local node --check acl.js / app.js: PASS
+
+BenchmarkACLScope/directory-3: 48.52 ns/op, 16 B/op, 1 allocs/op
+BenchmarkACLScope/script-3: 1985 ns/op, 2987 B/op, 44 allocs/op
+Parallel wall time per operation; not individual latency or production HTTP throughput.
+
+Coverage: default deny within scope, no-match allow, empty allow denies, overlapping scopes AND, grant alternatives OR, grant conditions AND, string directory boundaries, IPv4/IPv6 normalization, script failure/cancellation, immutable compilation, unnamed policies and generated stable IDs, API-key declarative edits while retaining script restrictions, observe mode with quotas, first development build compatibility.
+UI coverage: batch IP textarea, no name/order/action controls, generated quota summaries, string directory template, equivalent legacy pair conversion.
+
+Deployment kept runtime env.yml and Host state hashes unchanged at binary replacement.
+Management Host demo migrated from two ordered rules to one Scope with one IP grant.
+Host: 94edde0f-1140-4b02-bbd6-5380456efb21
+Previous version: 2; published version: 3; revision: 6; applied online nodes: 1
+Other Host records unchanged through demo publication.
+Scope: directory /__acl_demo__/admin
+Allow: 127.0.0.1/32
+Existing exact rewrite to / retained.
+TLS-verified loopback HTTPS: 200
+External HTTPS root/child protected paths: 403
+Unrelated similarly named path /__acl_demo__/administrator: 404 (upstream, not ACL)
+Management home / QBank / LLM / Knowbase / Teaching health: 200
+Live acl.js and app.js match local bytes.
+
+No L4/L7 modes, LVS engine, system networking code or new project was created.
+No commits, tags or pushes.
+Before downgrading to the first development binary, use the current manager to roll back the demo Host to version 2 (or restore its paired configuration backup); that earlier binary does not understand Scope/Allow.

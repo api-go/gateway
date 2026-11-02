@@ -123,6 +123,11 @@ func TestGateway(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Both in-process servers share Discover lifecycle. Keep the backend fixture
+	// in the registry after Gateway starts its own asynchronous discovery run.
+	affinityFixtureNode(t, backendName, backend.Addr, 100)
+	defer affinityFixtureNode(t, backendName, backend.Addr, 0)
+
 	// Subscriptions must be live, so updates do not wait for periodic reconciliation.
 	for _, channel := range []string{testPrefix + ":manage", testPrefix + ":channel", testPrefix + ":affinity-events"} {
 		counts := rd.Do("PUBSUB", "NUMSUB", channel).Results()

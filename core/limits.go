@@ -103,6 +103,9 @@ func (c *compiledLimit) matches(request *service.Request) bool {
 		switch condition.Operator {
 		case "equals":
 			matched = value == condition.Value
+		case "directory":
+			prefix := strings.TrimSuffix(condition.Value, "/")
+			matched = value == prefix || strings.HasPrefix(value, prefix+"/")
 		case "prefix":
 			matched = strings.HasPrefix(value, condition.Value)
 		case "contains":
@@ -276,4 +279,23 @@ func writeLimitResponse(response *service.Response, decision LimitDecision) {
 	response.Header().Set("Retry-After", cast.String(max(1, decision.RetryAfter)))
 	response.WriteHeader(http.StatusTooManyRequests)
 	response.WriteString("request quota exceeded")
+}
+
+// Summaries describe the current configuration; identity remains the stable ID.
+func limitSummary(rule LimitRule) string {
+	scope := "全部请求"
+	for _, condition := range rule.Conditions {
+		if condition.Source == "path" {
+			scope = condition.Value
+			break
+		}
+	}
+	group := "合计"
+	if len(rule.GroupBy) > 0 {
+		group = "每个身份"
+		if len(rule.GroupBy) == 1 && rule.GroupBy[0].Source == "ip" {
+			group = "每个 IP"
+		}
+	}
+	return fmt.Sprintf("%s · %s · %d 次 / %d 秒", scope, group, rule.Requests, rule.PeriodSeconds)
 }

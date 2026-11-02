@@ -135,13 +135,13 @@ func TestAffinityReliability(t *testing.T) {
 			added := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "four") }))
 			defer added.Close()
 			addedAddr := strings.TrimPrefix(added.URL, "http://")
-			affinityFixtureNode(app, addedAddr, 100)
+			affinityFixtureNode(t, app, addedAddr, 100)
 			expanded := phase("expand-3-to-4", 1)
 			moved := check("expansion", first, expanded, func(_ int, _, new string) bool { return mode == "off" || mode == "hash" && new == "four" })
 			if mode == "hash" && (moved < 2000 || moved > 3000) {
 				t.Fatalf("hash expansion movement outside 20-30%%: %d", moved)
 			}
-			affinityFixtureNode(app, addresses[0], 0)
+			affinityFixtureNode(t, app, addresses[0], 0)
 			failed := phase("primary-removed", 1)
 			check("removal", expanded, failed, func(_ int, old, new string) bool { return mode == "off" || old == labels[addresses[0]] && new != old })
 			again := phase("failure-repeat", 1)
@@ -157,8 +157,8 @@ func TestAffinityReliability(t *testing.T) {
 					}
 				}
 			}
-			affinityFixtureNode(app, addresses[0], 100)
-			affinityFixtureNode(app, addedAddr, 0)
+			affinityFixtureNode(t, app, addresses[0], 100)
+			affinityFixtureNode(t, app, addedAddr, 0)
 			restored := phase("membership-restored", 1)
 			check("restore", first, restored, func(_ int, _, _ string) bool { return mode == "off" })
 			if mode == "off" && len(discover.GetAppNodes(app)) < 3 {

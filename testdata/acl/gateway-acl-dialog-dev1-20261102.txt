@@ -1,0 +1,41 @@
+Gateway ACL/rule dialog development verification — 2026-11-02
+
+Dev1 build: golang:1.26.8-bookworm; 3 CPU / 3 GiB; GOWORK=off
+Runtime: existing alpine:3.24.2, user 1000:984
+Node: 24.21.0-bookworm; Chrome for Testing 156.0.8078.73
+Binary SHA-256:
+83d6bc8a17ce1f37e07ded240f3408cf324dedbf41ccd3005f7a69dc68b9d23b
+Backup: /app/gateway/backup/gateway-acl-dialog-20261102T092752Z
+Server evidence: /app/gateway/.upstream/acl-dialog-dev-20261102/
+
+go mod verify: PASS
+go test -v ./...: PASS, core 7.203s
+go vet ./... / Linux build: PASS
+Node syntax checks / git diff --check: PASS
+tests/acl-ui.cjs: PASS
+tests/rule-editor-browser.cjs, live HTTPS assets: PASS
+
+Browser coverage:
+- Neutral empty ACL path, no admin shortcut or preset.
+- Empty condition cannot silently become whole-Host protection.
+- Batch IP input survives structural changes; temporary input state is not saved.
+- Add/edit confirmation commits to pending Host config; cancel/Escape discards.
+- Summary lists contain no inline input controls.
+- Rule deletion confirmation/cancellation never deletes the Host.
+- Proxy/rewrite/redirect/static/rate/affinity use the same dialog workflow.
+- Save/reopen retains all rule categories using isolated API fixtures.
+- 390px mobile layout, modal footer reachable, no page errors.
+- All browser API calls intercepted; no shared configuration writes.
+
+Live app.js / acl.js / rule-editor.js / style.css equal staged source bytes.
+Runtime env.yml / gateway.yaml / data/gateway/state.json hashes unchanged.
+dev-gateway: healthy
+Management HTTPS root: 200
+Existing protected ACL demo: 403
+QBank /api/health: 200
+LLM root: 200
+Knowbase root: 200
+Teaching /api/health: 200
+
+No commit, tag or release. No L4 integration.
+Separate prototype archived locally as _lvs_已废弃.

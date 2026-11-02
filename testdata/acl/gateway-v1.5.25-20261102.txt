@@ -1,0 +1,42 @@
+Gateway v1.5.25 — 2026-11-02
+
+Dev1: Go 1.26.8-bookworm; 3 CPU / 3 GiB; isolated Redis 7.4.2
+Runtime: alpine:3.24.2; user 1000:984
+Linux binary SHA-256:
+707b4288275e7e91c138a2c97257e4b88f5a5bda5eb1d45ba1b584669bd6c81e
+Logs/build info/API/manifest: /app/gateway/.upstream/trash-dev-20261102/
+
+Released dependencies only; GOWORK=off; no replaces
+mod verify / tidy-diff / vet / Linux build: PASS
+go test -v ./...: PASS (core 12.021s)
+go test -bench=. -benchmem ./...: PASS (core 29.858s)
+ACL + Host trash race: PASS (11.881s)
+Final Host trash race including nonempty-bin snapshot recovery: PASS (4.536s)
+Node ACL/rule transaction tests: PASS
+Isolated real-backend browser acceptance: PASS, errors=[]
+Live HTTPS browser + isolated API fixtures: PASS
+
+BenchmarkHostTrashListing-3: 335284 ns/op; 137126 B/op; 2724 allocs/op (32 records)
+BenchmarkACLScope/directory-3: 49.23 ns/op; 16 B/op; 1 allocs/op
+BenchmarkACLScope/script-3: 2111 ns/op; 2989 B/op; 44 allocs/op
+BenchmarkAffinityHashProxy-3: 168205 ns/op; 96162 B/op; 1128 allocs/op
+BenchmarkAffinityAutomaticProxy-3: 166855 ns/op; 96027 B/op; 1128 allocs/op
+BenchmarkAffinityGradualProxy-3: 172480 ns/op; 96246 B/op; 1134 allocs/op
+Management listing is outside the request path. Benchmarks are not production throughput.
+Proxy benchmarks require actual upstream HTTP 204 and registered fixture leases.
+
+Trash retains draft/current/history and encrypted credentials until purge.
+Restore reactivates original publication, preserving unpublished draft separately.
+Draft-only restore does not publish. Domain conflicts leave trash unchanged.
+Revision fences, one-winner Redis CAS, restart, snapshot recovery, redaction,
+wrong-key refusal, CSRF, Host-scoped read/publish/delete permissions: PASS.
+Browser actual routing: delete -> 404; restore -> 200; purge -> 404.
+Cancel restore/purge leaves item retained; final purge leaves empty bin.
+No shared development Host configuration was changed by browser tests.
+
+Dev1 runtime reports gateway version 1.5.25; dev-gateway healthy.
+env.yml / gateway.yaml / data/gateway/state.json hashes unchanged at deployment.
+Live app.js / acl.js / rule-editor.js / trash.js / style.css / api-guide.txt match source.
+Management root 200; existing protected ACL demo 403.
+QBank /api/health, LLM root, Knowbase root, Teaching /api/health: 200.
+Gateway remains L7-only. Independent L4 prototype remains archived.

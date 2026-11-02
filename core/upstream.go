@@ -39,7 +39,7 @@ type UpstreamTestResult struct {
 // It always sends GET, never forwards administrator credentials and does not follow redirects.
 func (m *Manager) TestUpstream(ctx context.Context, input PreviewInput) (UpstreamTestResult, error) {
 	input.Method = http.MethodGet
-	preview, err := m.Preview(input)
+	preview, err := m.preview(input, false)
 	if err != nil {
 		return UpstreamTestResult{}, err
 	}

@@ -1,0 +1,39 @@
+dev1 ACL development deployment — 2026-11-02 (Asia/Shanghai)
+Host: dewesedu@10.177.65.105
+Container: dev-gateway, alpine:3.24.2, healthy
+Build: golang:1.26.8-bookworm, linux/amd64, 3 CPU / 3 GiB, GOWORK=off, no replace
+Isolated test Redis: redis:7.4.2-alpine, network none; container removed after tests
+Source archive SHA256: f0e33b8790de8b2a039087801603fa9ccc6e7162298e5b9245c371a05965871a
+Deployed binary SHA256: 66999aef37e1e287363c4da1e4a365b6f1eda27524fd45278ea29434263114a6
+Backup: /app/gateway/backup/gateway-acl-20261102T040620Z
+Evidence: /app/gateway/.upstream/acl-dev-20261102/
+
+Full tests with GATEWAY_REDIS_INTEGRATION=1: PASS, core 11.438s
+Full benchmarks with GATEWAY_REDIS_INTEGRATION=1: PASS, core 25.690s
+ACL race with GATEWAY_REDIS_INTEGRATION=1: PASS, core 5.832s
+go mod verify / go vet: PASS
+BenchmarkACL/none-3: 4.920 ns/op, 0 B/op, 0 allocs/op
+BenchmarkACL/conditions-3: 77.64 ns/op, 16 B/op, 1 allocs/op
+BenchmarkACL/script-3: 2071 ns/op, 2972 B/op, 43 allocs/op
+Benchmarks report aggregate parallel wall time, not single-request latency or production gateway throughput.
+
+Runtime env.yml and Host state hashes unchanged at binary replacement.
+Demo management Host ID: 94edde0f-1140-4b02-bbd6-5380456efb21
+Publication: version 1 -> 2, revision 2 -> 4; 1 online node applied version 2 without error.
+Intentional demo changes: two ACL rules and one exact rewrite for /__acl_demo__/admin -> /.
+ACL: allow 127.0.0.1/32 for ^/__acl_demo__/admin(/|$), then deny remaining sources for that path.
+Other Host configurations unchanged after normalizing newly serialized empty ACL fields.
+Runtime env.yml unchanged after demo publication.
+
+TLS-verified loopback HTTPS demo: 200
+External HTTPS demo: 403 access denied
+Management homepage: 200
+QBank /api/health: 200
+LLM /healthz: 200
+Knowbase /api/health: 200
+Teaching /api/health: 200
+Live acl.js and app.js match local source bytes.
+Browser verified real HTTPS demo displays access denied.
+
+No Git commit, tag or push. Built-in CLI version remains the pre-existing hardcoded 1.5.19; identify this development deployment using binary hash and source manifest.
+LVS/proxy modes and dedicated Gateway node discovery remain design discussion; no LVS implementation was deployed.

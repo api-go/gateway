@@ -169,13 +169,23 @@ func (m *Manager) handleMachineAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	action := strings.TrimPrefix(r.URL.Path, "/api/v1/")
 	actor := "api-key:" + key.ID
-	if r.Method == "GET" && action == "hosts" {
+	if r.Method == "GET" && (action == "hosts" || action == "trash") {
 		if !slices.Contains(key.Permissions, "read") {
 			http.Error(w, "permission denied", 403)
 			return
 		}
 		if err := m.Reconcile(); err != nil {
 			http.Error(w, "configuration store unavailable", 503)
+			return
+		}
+		if action == "trash" {
+			items := []DeletedHost{}
+			for _, item := range m.Trash() {
+				if keyAllows(key, "read", item.Record.Draft.ID) {
+					items = append(items, item)
+				}
+			}
+			writeJSON(w, 200, items)
 			return
 		}
 		records := []HostRecord{}
@@ -205,7 +215,7 @@ func (m *Manager) handleMachineAPI(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, nodes)
 		return
 	}
-	permission := map[string]string{"draft": "draft", "preview": "draft", "publish": "publish", "rollback": "publish", "delete": "delete"}[action]
+	permission := map[string]string{"draft": "draft", "preview": "draft", "publish": "publish", "rollback": "publish", "delete": "delete", "restore": "publish", "purge": "delete"}[action]
 	if permission == "" {
 		http.NotFound(w, r)
 		return
@@ -236,8 +246,8 @@ func (m *Manager) handleMachineAPI(w http.ResponseWriter, r *http.Request) {
 		m.mu.Lock()
 		previous := m.state.Hosts[input.Host.ID].Draft
 		m.mu.Unlock()
-		if input.Host.Monitor.CheckScript != previous.Monitor.CheckScript || !slices.Equal(input.Host.Monitor.ChannelIDs, previous.Monitor.ChannelIDs) {
-			http.Error(w, "only administrator sessions may edit monitor scripts and alarm bindings", 403)
+		if !sameACLScripts(input.Host.ACL, previous.ACL) || input.Host.Monitor.CheckScript != previous.Monitor.CheckScript || !slices.Equal(input.Host.Monitor.ChannelIDs, previous.Monitor.ChannelIDs) {
+			http.Error(w, "only administrator sessions may edit ACL/monitor scripts and alarm bindings", 403)
 			return
 		}
 		if previous.Monitor.SealedHeaders != "" && monitorRouteFingerprint(input.Host) != monitorRouteFingerprint(previous) && input.Host.Monitor.Headers == nil && !input.Host.Monitor.ClearHeaders {
@@ -252,6 +262,11 @@ func (m *Manager) handleMachineAPI(w http.ResponseWriter, r *http.Request) {
 		result, err = m.Publish(input.Host.ID, input.Revision, actor)
 	case "rollback":
 		result, err = m.Rollback(input.Host.ID, input.Version, input.Revision, actor)
+	case "restore":
+		result, err = m.Restore(input.Host.ID, input.Revision, actor)
+	case "purge":
+		err = m.Purge(input.Host.ID, input.Revision, actor)
+		result = map[string]bool{"ok": err == nil}
 	case "delete":
 		err = m.Delete(input.Host.ID, input.Revision, actor)
 		result = map[string]bool{"ok": err == nil}

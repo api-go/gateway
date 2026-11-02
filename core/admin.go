@@ -193,7 +193,7 @@ func (m *Manager) AdminHandler() http.Handler {
 			http.SetCookie(writer, &http.Cookie{Name: "gateway-admin", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteStrictMode})
 			writeJSON(writer, 200, map[string]bool{"ok": true})
 			return
-		case "/api/hosts":
+		case "/api/hosts", "/api/trash":
 			if request.Method != "GET" {
 				http.Error(writer, "method not allowed", 405)
 				return
@@ -202,7 +202,11 @@ func (m *Manager) AdminHandler() http.Handler {
 				http.Error(writer, "configuration store unavailable", 503)
 				return
 			}
-			writeJSON(writer, 200, m.Hosts())
+			if request.URL.Path == "/api/trash" {
+				writeJSON(writer, 200, m.Trash())
+			} else {
+				writeJSON(writer, 200, m.Hosts())
+			}
 			return
 		case "/api/certificates", "/api/acme", "/api/certificates/save", "/api/certificates/delete", "/api/certificates/issue":
 			m.handleCertificateLibrary(writer, request, session.User)
@@ -307,6 +311,11 @@ func (m *Manager) AdminHandler() http.Handler {
 			result, err = m.Rollback(input.Host.ID, input.Version, input.Revision, session.User)
 		case "/api/delete":
 			err = m.Delete(input.Host.ID, input.Revision, session.User)
+			result = map[string]bool{"ok": err == nil}
+		case "/api/restore":
+			result, err = m.Restore(input.Host.ID, input.Revision, session.User)
+		case "/api/purge":
+			err = m.Purge(input.Host.ID, input.Revision, session.User)
 			result = map[string]bool{"ok": err == nil}
 		case "/api/certificate":
 			result, err = m.SetCertificate(input.Host.ID, input.Revision, input.Certificate, []byte(input.Key), session.User)

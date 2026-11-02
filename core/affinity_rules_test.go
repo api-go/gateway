@@ -68,7 +68,7 @@ func TestManualAffinityPathsMethodsAndBackups(t *testing.T) {
 	if response := affinityRequestFor(t, m, "/lesson/get?lessonid=9", "", ""); response.Code != 502 {
 		t.Fatal("unmapped manual value was arbitrarily assigned")
 	}
-	discover.SetNode(app, addresses[0], 0)
+	affinityFixtureNode(t, app, addresses[0], 0)
 	for range 5 {
 		response := affinityRequestFor(t, m, "/lesson/get?lessonid=101", "", "")
 		if response.Code != 200 || response.Body.String() != backup {
@@ -141,8 +141,8 @@ func TestAffinityExpansionAndHashMovement(t *testing.T) {
 			added := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "four") }))
 			defer added.Close()
 			address := strings.TrimPrefix(added.URL, "http://")
-			discover.SetNode(app, address, 100)
-			defer discover.SetNode(app, address, 0)
+			affinityFixtureNode(t, app, address, 100)
+			defer affinityFixtureNode(t, app, address, 0)
 			moved := 0
 			for key, old := range before {
 				response := affinityRequestFor(t, m, "/", "header", key)
@@ -159,7 +159,7 @@ func TestAffinityExpansionAndHashMovement(t *testing.T) {
 			if mode == "hash" && (moved == 0 || moved == len(before)) {
 				t.Fatalf("unexpected hash movement %d", moved)
 			}
-			discover.SetNode(app, address, 0)
+			affinityFixtureNode(t, app, address, 0)
 			for key, old := range before {
 				if response := affinityRequestFor(t, m, "/", "header", key); response.Body.String() != old {
 					t.Fatal("unaffected nodes changed on removal")

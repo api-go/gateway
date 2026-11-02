@@ -6,19 +6,23 @@ BASE 为读取此文档的协议和主机地址，例如 http://192.168.1.10:81�
 请求头 Authorization: Bearer <API_KEY>。不要放入 URL、文档或日志。
 无需 Cookie 或 CSRF；此 Key 用于管理网关，不用于业务请求认证。
 
-权限 read：读取；draft：草稿/预览；publish：发布/回滚；delete：删除。
+权限 read：读取；draft：草稿/预览；publish：发布/回滚/恢复；delete：移入回收站/永久删除。
 Host 按 ID 精确授权；* 表示全部，包括新 Host。
 POST 请求使用 Content-Type: application/json。
 
 GET /api/v1/hosts 返回已授权 HostRecord 数组，含 draft/current/revision/version/history。
+GET /api/v1/trash 返回已授权 DeletedHost 数组，含 record、deletedAt、deletedBy；record 已脱敏。
 GET /api/v1/nodes 返回在线节点状态，versions 仅含已授权 Host。
 POST /api/v1/draft {"host":完整Host,"revision":当前Host修订号}
 POST /api/v1/preview {"host":完整Host,"domain":"api.example.com","path":"/health","method":"GET"}
 POST /api/v1/publish {"host":{"id":"example"},"revision":当前Host修订号}
 POST /api/v1/rollback {"host":{"id":"example"},"revision":当前Host修订号,"version":历史版本号}
-POST /api/v1/delete {"host":{"id":"example"},"revision":当前Host修订号}
+POST /api/v1/delete {"host":{"id":"example"},"revision":当前Host修订号} 移入回收站
+POST /api/v1/restore {"host":{"id":"example"},"revision":回收站record.revision} 恢复原发布配置，要求publish权限
+POST /api/v1/purge {"host":{"id":"example"},"revision":回收站record.revision} 永久删除，仅作用于回收站
+恢复保留独立草稿；域名冲突或配置无效时拒绝，记录保留。永久删除无法从回收站恢复。
 
-Host 字段 id、domains（数组）、enabled、https、proxies、rewrites、statics、limits。
+Host 字段 id、domains（数组）、enabled、https、proxies、rewrites、statics、acl、limits。
 名称由域名生成。https.mode=adaptive 自动匹配后台证书库，off 为 HTTP。
 代理 path=/* 匹配整站，/ 仅首页；to 为发现服务名或完整 http(s) URL。
 静态路径相对于网关工作目录。保存为完整替换，编辑时保留其他配置字段。

@@ -1,5 +1,53 @@
 # Gateway 验证报告
 
+## v1.5.25 发布验证（2026-11-02）
+
+- 依赖审计：全部 apigo 直接及间接依赖与 .profile 正式版本一致，无 replace；GOWORK=off。dev1 使用 Go 1.26.8、3 CPU / 3 GiB，以及独立无外网 Redis 7.4.2 网络空间。
+- `go mod verify`、`go mod tidy -diff`、`go test -v ./...`（core 12.021s）、`go test -bench=. -benchmem ./...`（core 29.858s）、`go vet ./...` 和 Linux 构建通过。ACL/回收站专项 race 11.881s；增加回收站快照恢复覆盖后的专项 race 4.536s。大规模 affinity 可靠性及 Redis 进程中断项目保持其 opt-in，本轮未启用。
+- 回收站覆盖：删除后停止路由、完整草稿/发布/历史保留、恢复仅重新启用原发布内容、纯草稿不自动发布、修订号和版本递增、重启、域名冲突、ID 防覆盖、过期修订拒绝、永久删除、脱敏/加密凭据与错误密钥拒绝、CSRF、API Key 按 Host 授权及恢复所需 publish 权限、Redis 双节点同步/CAS 单次恢复、非空回收站快照恢复、永久删除后快照不复活。
+- `testdata/browser/acceptance.cjs` 在隔离真实后端完成全流程，覆盖四类路由、限流、证书、回滚、并发编辑、回收站操作取消/恢复/永久删除与实际流量切换、API Key、会话及窄屏，无页面错误。线上 HTTPS 资源另用浏览器隔离 API 夹具验证规则弹窗和窄屏回收站，未改动共享 Host。
+- `tests/acl-ui.cjs`、全部修改的 JS 语法及 git diff --check 通过。仓库无 ai/tools/getExports，改用 `go doc -all ./core` 与导出源码交叉核对；中英文 README/API 指引已同步 Trash/Restore/Purge、DeletedHost 与 ACL。
+- 基准：32 条回收站记录脱敏列表 335284ns/op、137126B/op、2724allocs/op；这是管理操作，不在转发请求路径。ACL 目录范围 49.23ns/op、16B/1alloc，加脚本 2111ns/op、2989B/44alloc。ACL 为并行摊销值，不代表单请求延迟或生产吞吐。会话保持代理基准均校验上游 204 与有效发现租约。
+- dev1 运行 1.5.25，配置及 Host 状态哈希不变；管理首页 200，原 ACL 演示 403，QBank/LLM/Knowbase/Teaching 健康 200。部署和原始验证证据见 [发布摘要](testdata/acl/gateway-v1.5.25-20261102.txt)。
+
+## 规则弹窗交互开发验证（未发布，2026-11-02）
+
+- ACL、代理、重写、重定向、静态文件、限流、会话保持采用摘要列表和独立规则弹窗；取消、关闭及 Esc 不修改原规则。规则删除独立确认，Host 删除仅在配置标签页显示“删除整个 Host”。
+- 新建 ACL 无 admin 快捷入口及路径预设；空匹配值阻止确认，整站保护通过显式移除范围条件表达。批量 IP 在结构编辑期间保留，确认时写入规则，不保存临时编辑字段。
+- dev1 固定 Go 1.26.8、3 CPU / 3 GiB：`go mod verify`、`go test -v ./...`（core 7.203s）、`go vet ./...` 和 Linux 构建通过。纯前端交互修改，未重复既有 ACL 性能基准及 race 验证。
+- Node 24.21.0 的 `tests/acl-ui.cjs` 通过；真实 HTTPS 域名加载线上资源的 `tests/rule-editor-browser.cjs` 通过，覆盖添加/编辑/取消、批量 IP、动态条件、删除取消/确认、七类规则保存回显、390px 布局及弹窗底部可达，无页面脚本错误。API 在浏览器内使用隔离夹具拦截，未写入共享 Host/Redis。
+- 已部署 dev1，运行配置和 `data/gateway/state.json` 哈希保持一致；线上四份 JS/CSS 资源逐字节匹配。管理入口 200，既有 ACL 演示 403，QBank、LLM、Knowbase、Teaching 健康检查 200。
+- [部署与验证摘要](testdata/acl/gateway-acl-dialog-dev1-20261102.txt)。无提交、Tag 或模块发布；Gateway 保持纯 L7。
+
+## ACL 范围/放行简化验收（2026-11-02）
+
+- 新模型覆盖：Scope 内默认拒绝、Allow OR、grant 条件 AND、重叠范围 AND、空范围/空放行、字符串目录前缀边界、IPv6 等值归一化、脚本错误与其他放行项、取消、原配置不可变、自动稳定 ID、无名称保存、API Key 声明式修改与脚本编辑边界、观察模式与限流、旧开发配置兼容。
+- dev1 固定 Go 1.26.8、3 CPU / 3 GiB、独立 Redis 7.4.2 容器：全量 Redis 集成测试 11.541s、全模块基准 29.073s、ACL race 8.485s、go mod verify、go vet 均通过。专项 Node 24.21.0 表单测试验证 IP 批量输入、自动摘要、名称/排序入口移除、纯字符串 admin 模板和旧两条规则等价转换；node --check 与 git diff --check 通过。
+- 3 并行执行者基准：新目录范围 + CIDR 放行 48.52ns/op，16B/1alloc；脚本放行 1985ns/op，2987B/44alloc。为并行总耗时摊销值，不代表单请求延迟或完整网关吞吐。
+- 已更新 dev-gateway 且健康，替换二进制时 env.yml/state.json 哈希一致。备份 `/app/gateway/backup/gateway-acl-scope-20261102T043857Z`。演示 Host 由 version=2 的旧两条规则迁移到 version=3/revision=6 的单个 Scope/Allow，在线节点确认应用；其他 Host 记录不变。当前二进制 SHA256 为 `e1cc151d4d0fdad43f3b0317739b61efd6913f599ecd54e29146225d1e7b5da9`。
+- 真实 HTTPS 演示：回环来源 200、外部来源保护路径及子路径 403、相似名称非保护路径返回上游 404；管理首页及 QBank/LLM/Knowbase/Teaching 健康均 200。线上 acl.js/app.js 与本地一致。临时源码、探测程序和测试 Redis 已清理。没有加入四层运行模式或 LVS 系统管理代码。
+- [验证摘要](testdata/acl/gateway-acl-scope-dev1-20261102.txt)。未提交/Tag；如回退到首个不识别 Scope/Allow 的开发二进制，先用当前管理端把演示 Host 回滚到旧 version=2，或配套恢复配置备份。
+
+## ACL dev1 开发部署验收（2026-11-02）
+
+- 按 DL SOP 在 dev1 固定 Go 1.26.8 镜像构建；独立 Redis 7.4.2 容器/网络完成全量集成测试（11.438s）、全模块基准（25.690s）、ACL race（5.832s）、go mod verify 与 go vet，均通过。临时测试 Redis 已清理。
+- 已部署现有 dev-gateway（健康）；替换二进制时 env.yml 与 Host 状态哈希均保持一致，证书/密钥保留。备份 `/app/gateway/backup/gateway-acl-20261102T040620Z`，二进制 SHA256 为 `66999aef37e1e287363c4da1e4a365b6f1eda27524fd45278ea29434263114a6`。本次无提交/Tag，CLI 既有硬编码版本仍为 1.5.19，以构建哈希和清单识别开发版本。
+- 人工验收演示：管理 Host gateway-dev.deeler.cn 新增路径 `/__acl_demo__/admin` 的回环 IP allow + 其他 IP deny，并将该精确路径重写到管理首页；该 Host version=2/revision=4，在线节点确认应用。其余 Host 配置保持一致（仅序列化新增空 ACL 字段）。
+- 真实 TLS 验证：回环来源演示 200，外部来源演示 403；管理首页及 QBank、LLM、Knowbase、Teaching 健康均 200。线上 acl.js/app.js 与本地源码逐字节一致；浏览器真实 HTTPS 入口显示 access denied。
+- [完整部署摘要](testdata/acl/gateway-acl-dev1-20261102.txt)；dev1 测试/构建日志和源文件哈希清单位于 `/app/gateway/.upstream/acl-dev-20261102/`，临时源码与探测程序已清理。LVS 未实现或部署。
+
+## ACL 开发验证（未发布，2026-11-02）
+
+- 依赖审计：Gateway 直接/间接 apigo 依赖与 .profile 已发布版本一致；GOWORK=off，无 replace，无新增依赖。
+- 覆盖有序 allow/deny、观察并继续、未匹配默认允许、IPv4/IPv6/CIDR、路径边界/编码、方法/Header/Cookie/Session、既有可信 X-Real-IP 解析结果、拒绝不访问上游或消耗限流额度、允许仍执行限流。
+- 覆盖脚本 true/false、异常、非法返回、超时、请求取消、并发、请求体保留、编译配置与调用方修改隔离、无效规则/重复 ID、发布/回滚/重启、API Key 脚本编辑边界和 Redis 双节点同步/移除。
+- 覆盖公开请求预览 ACL 判定，以及配置检查、监控路由解析、直接上游测试保留独立行为。Redis 测试夹具采用原子节点/心跳登记及实际快照就绪判定，符合已发布 Discover 的异步生命周期。
+- 浏览器实测：独立 ACL 标签页、白名单模板、网段编辑、草稿保存/关闭/重新打开回显；布局可用，控制台无错误。临时后台已清理。
+- API 检查使用 `GOWORK=off go doc -all ./core` 与导出源码交叉核对（仓库未提供 ai/tools/getExports）；中英文 README 已补齐 ACL、NewACL、ACL.Evaluate、ACLRule、ACLDecision。
+- 最终验证：`GATEWAY_REDIS_INTEGRATION=1 GOWORK=off go test -v ./...` 通过（core 15.051s）；同环境 ACL 专项 race 通过（6.224s）；`GOWORK=off go test -bench=. ./...` 通过（17.910s）；go vet、两份 JS 的 node --check、git diff --check 通过。独立进程/大规模 affinity 可靠性和 Redis 进程中断项目保持其显式 opt-in，未启用。
+- 16 并行执行者的 ACL 基准：无规则 0.3953ns/op、0B/0alloc；路径正则 + IPv4 CIDR 18.81ns/op、16B/1alloc；同条件加 JS 1340ns/op、3026B/43alloc。均为并行总耗时摊销值，非单请求延迟或生产网关吞吐；不含 HTTP、上游、日志及 Redis。脚本基准采用 100ms 执行预算以测量正常执行开销；超时/取消行为由独立测试验证，默认预算仍为 10ms。
+- 结果摘录：[ACL 验证](testdata/acl/gateway-acl-20261102.txt)。
+
 ## v1.5.19 发布验证（2026-10-22）
 
 - 依赖审计：全部apigo直接/间接依赖与公开已发布索引一致，GOWORK=off，无replace；tidy-diff无变化。

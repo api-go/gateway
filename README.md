@@ -2,9 +2,55 @@
 
 [English](README.en.md)
 
-基于 `apigo.cc/go/service` 的动态网关。**v1.5.19** 提供管理后台、独立限流与集中证书管理，依赖已发布的 Service v1.5.47、Discover v1.5.17、API v1.5.20、JS v1.5.17。此处以实际实现为准。
+基于 `apigo.cc/go/service` 的动态网关。**v1.5.25** 提供管理后台、ACL、Host 回收站、独立限流与集中证书管理，依赖已发布的 Service v1.5.52、Discover v1.5.21、API v1.5.21、JS v1.5.17。此处以实际实现为准。
 
 Redis 通知订阅随 GatewayApp 启动与停止，管理配置和旧路由通知及时生效。
+
+## Host 回收站
+
+Host 配置页的“移入回收站”停止托管该 Host，保留其 ID、创建时间、草稿、已发布配置、历史版本及加密凭据；本地/旧 Redis 的同域名规则仍沿用既有回退行为。Host 列表和普通导出不包含回收站内容。点击 Host 页的“回收站”查看删除时间及操作人、恢复或永久删除；无自动过期或自动清空。
+
+恢复会重新启用删除前的已发布配置，并增加发布版本及修订号；尚未发布的草稿仍独立保留，纯草稿恢复后不会自动发布。域名已被其他 Host 占用、证书失效或配置校验失败时拒绝恢复，原记录保留。回收站中的 ID 不允许直接新建覆盖。永久删除只移除回收站内的配置，不能直接作用于活动 Host；审计和独立运维备份不受影响。
+
+API：`Manager.Trash() []DeletedHost`、`Manager.Restore(id, expected, actor) (HostRecord, error)`、`Manager.Purge(id, expected, actor) error`；`Manager.Delete` 改为软删除。`DeletedHost` 含 Record、DeletedAt、DeletedBy；返回的 Record 已脱敏。`State.Trash` 与现有 State 共用 Redis CAS、通知、周期同步及本地备份。操作使用回收站 Record.Revision，冲突返回 409；永久删除后不能通过回收站恢复。管理接口为 GET `/api/trash`、POST `/api/restore`、POST `/api/purge`；Bearer 程序接口使用对应 `/api/v1/` 路径，分别要求 read、publish、delete 权限及 Host 授权。删除仍使用 POST `/api/v1/delete`。
+
+回收站是新增持久化字段，集群各节点应统一升级后使用，避免旧二进制写配置时丢弃该字段；不支持降级后继续写入回收站配置。
+
+## ACL 访问控制
+
+Host 使用 `ACL []ACLRule` 保护请求范围。每项分为 `Scope`（范围条件全部满足）和 `Allow`（放行方式，任意一项满足）。范围内默认拒绝，范围外不受该项影响；空 Scope 保护整站，空 Allow 全部拒绝。重叠范围必须全部通过，顺序不影响结果。允许之后仍执行限流。
+
+ACL、代理、重写、重定向、静态文件、限流和会话保持使用摘要列表，添加和编辑通过独立弹窗完成；取消或 Esc 不修改原规则，确认后仍需保存草稿并发布。规则删除有独立确认；“移入回收站”仅在配置标签页显示。ACL 新建路径留空，无 admin 快捷按钮或预设。
+
+后台不要求名称、不提供 allow/deny 排序；根据范围与参数生成摘要，IP/CIDR 支持批量输入。限流同样自动显示路径、计数维度和次数/周期。内部 ID 自动生成并随保存保留；API 编辑时保留响应 ID，Name 仅为旧配置兼容字段。
+
+```yaml
+ACL:
+  - Enabled: true
+    Scope:
+      - {Source: path, Operator: prefix, Value: /admin/}
+    Allow:
+      - Conditions:
+          - {Source: ip, Operator: cidr, Value: 192.168.10.0/24}
+      - Conditions:
+          - {Source: ip, Operator: equals, Value: 203.0.113.10}
+```
+
+前缀 `/admin/` 仅覆盖该前缀；例如手动配置 `Operator: directory, Value: /admin`，用字符串比较覆盖 `/admin` 及 `/admin/...`，不匹配 `/administrator`，无需正则。范围及放行条件复用 Host/Path/IP/UA/method/header/cookie/session 与 equals/prefix/directory/contains/regex/cidr/exists；directory 只用于 Path。Path 是进入网关时的已解码路径。IP 直接使用既有 `request.ClientIp()`，不改变信任或转发机制。
+
+每个 `Allow` 元素是 `ACLGrant`：`Conditions` 内部 AND，多个 grant 之间 OR；高级条件和脚本无需额外名称。可选 `Script` 是 `apigo.cc/go/js` 匿名布尔函数，作为该 grant 的额外条件：
+
+```javascript
+function(request) { return request.method === 'GET'; }
+```
+
+true 满足本项，false、异常、超时或非布尔返回值不构成放行；仍可由其他 grant 放行，没有任何放行则 403。原生 grant 优先于脚本执行。脚本输入副本含 host/path/method/ip/ua/session、headers（标准名称 → 字符串数组）、cookies；不读请求体。SafeMode、16384 字节脚本上限、默认 10ms/可设 1–100ms 的 TimeoutMS 及请求取消保持支持。客户端自报 Header/Cookie 不是认证凭证。
+
+`ACLRule` 新配置字段为 ID、Enabled、Scope、Allow、Mode（enforce 默认/observe）；`ACLGrant` 为 Conditions、Script、TimeoutMS。observe 仅记录判定，不拒绝。最多 100 个范围、每个最多 100 项放行、每组最多 20 个条件。入口执行先于限流、重写、代理、静态资源和 WebSocket 握手，不追溯关闭存量连接。
+
+`NewACL([]ACLRule) (*ACL,error)` 预编译并可并发复用，`ACL.Evaluate(*service.Request) ACLDecision` 返回最终 RuleID/Allowed/Observed/Error。无请求路径 Redis 访问；JS 使用编译执行池。规则参与草稿、发布、回滚、重启和节点同步。公开 Preview 返回 ACL 判定；配置检查、监控路由解析和直接上游测试不执行入口 ACL。API Key 可编辑声明式条件，脚本增删改沿用管理员边界。
+
+首个开发版的 Action/Conditions/Script 有序规则保留兼容；新 Scope 策略始终先执行，旧 allow 不能绕过新保护范围。后台只对可证明等价的两条 allow→deny 模板转换为单个 Scope/Allow，其他旧配置保留兼容执行。Gateway 保持纯 L7，不引入 L4 模式或系统网络管理。
 
 ## 启动
 

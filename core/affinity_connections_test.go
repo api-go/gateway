@@ -73,8 +73,8 @@ func TestAffinityLiveConnectionsAcrossRoutingChange(t *testing.T) {
 		t.Cleanup(backend.Close)
 		address := strings.TrimPrefix(backend.URL, "http://")
 		addresses = append(addresses, address)
-		affinityFixtureNode(app, address, 100)
-		t.Cleanup(func() { affinityFixtureNode(app, address, 0) })
+		affinityFixtureNode(t, app, address, 100)
+		t.Cleanup(func() { affinityFixtureNode(t, app, address, 0) })
 	}
 	host := baseHost()
 	host.Proxies = []service.ProxyRule{{Path: "/*", To: app + "/"}}

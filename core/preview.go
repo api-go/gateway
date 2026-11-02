@@ -26,6 +26,7 @@ type PreviewResult struct {
 	Path   string
 	Target string
 	Type   string
+	ACL    ACLDecision
 	Limits []string
 	Notes  []string
 }
@@ -55,6 +56,11 @@ func matchRule(path, target, requestPath string) (string, bool) {
 	return target, path == requestPath
 }
 func (m *Manager) Preview(input PreviewInput) (PreviewResult, error) {
+	return m.preview(input, true)
+}
+
+// Route-only callers (monitoring and direct upstream tests) do not run ingress ACL.
+func (m *Manager) preview(input PreviewInput, checkACL bool) (PreviewResult, error) {
 	if err := validateHost(input.Host); err != nil {
 		return PreviewResult{}, err
 	}
@@ -90,19 +96,30 @@ func (m *Manager) Preview(input PreviewInput) (PreviewResult, error) {
 	for name, value := range input.Cookies {
 		request.AddCookie(&http.Cookie{Name: name, Value: value})
 	}
+	if !input.Host.Enabled {
+		result.Type = "disabled"
+		return result, nil
+	}
 	wrapped := service.NewRequest(request)
+	if checkACL {
+		acl, err := compileACL(input.Host.ACL)
+		if err != nil {
+			return result, err
+		}
+		result.ACL = acl.evaluate(wrapped, nil)
+		if !result.ACL.Allowed {
+			result.Type = "denied"
+			return result, nil
+		}
+	}
 	for _, rule := range input.Host.Limits {
 		compiled, err := compileLimit(rule)
 		if err != nil {
 			return result, err
 		}
 		if rule.Enabled && compiled.matches(wrapped) {
-			result.Limits = append(result.Limits, rule.Name+" ("+rule.ID+")")
+			result.Limits = append(result.Limits, limitSummary(rule)+" ("+rule.ID+")")
 		}
-	}
-	if !input.Host.Enabled {
-		result.Type = "disabled"
-		return result, nil
 	}
 	if input.Host.HTTPS.Force {
 		result.Notes = append(result.Notes, "HTTP requests redirect to HTTPS after quota checks")

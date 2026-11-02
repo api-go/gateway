@@ -1,8 +1,48 @@
-# Gateway v1.5.19
+# Gateway v1.5.25
 
 [中文文档](README.md)
 
 Dynamic HTTP gateway built on `apigo.cc/go/service`, with Host drafts, publication and rollback, adaptive HTTPS, quotas, service discovery, monitoring and signed robot alerts.
+
+## Host trash
+
+Deleting a Host now moves its complete record into trash: draft, publication, history, creation time and encrypted credentials are retained with DeletedAt/DeletedBy. Managed routing stops; existing local/legacy fallback behavior remains. Normal Host lists and exports exclude trash. The Hosts toolbar opens trash for restoration or separately confirmed permanent deletion. There is no automatic expiry.
+
+Restore reactivates the previous publication with increasing revision/version, while retaining unpublished draft changes separately. A draft-only Host stays unpublished. Domain conflicts, expired certificates or invalid configuration reject restoration without removing the retained record. IDs in trash cannot be recreated directly. Purge only accepts trashed Hosts; audit history and independent operations backups remain.
+
+API: `Manager.Trash() []DeletedHost`, `Manager.Restore(id, expected, actor) (HostRecord, error)`, `Manager.Purge(id, expected, actor) error`; `Manager.Delete` is now soft deletion. DeletedHost contains Record, DeletedAt and DeletedBy; returned records are redacted. State.Trash shares existing Redis CAS, notifications, reconciliation and local snapshots. Mutations use the retained Record.Revision. GET `/api/trash`, POST `/api/restore`, POST `/api/purge` are session endpoints; corresponding `/api/v1/` endpoints require read, publish and delete permissions respectively, with existing Host scoping. Existing POST delete remains available with its new soft-delete behavior.
+
+Upgrade all cluster writers before using trash; older binaries do not preserve the new persisted field when writing configuration. Downgrade with continued trash writes is unsupported.
+
+## ACL access control
+
+`Host.ACL []ACLRule` uses Scope (AND conditions) and Allow (OR alternatives). A matched scope denies by default; no scope match allows. Empty Scope protects the entire Host; empty Allow denies everything in that scope. Every overlapping scope must pass, independently of order. Allowed requests still pass through rate limits.
+
+The editor requires no policy name or ordering. It generates summaries from scope/parameters and supports bulk IP/CIDR input. Rate limits also display generated path/dimension/budget summaries. IDs are generated on save and remain stable; API clients retain response IDs on edits. Name is retained only for legacy compatibility.
+
+```yaml
+ACL:
+  - Enabled: true
+    Scope:
+      - {Source: path, Operator: prefix, Value: /admin/}
+    Allow:
+      - Conditions:
+          - {Source: ip, Operator: cidr, Value: 192.168.10.0/24}
+      - Conditions:
+          - {Source: ip, Operator: equals, Value: 203.0.113.10}
+```
+
+The ACL editor has no admin shortcut or preset path. ACL, routing, rate limits and affinity use summary lists with transactional add/edit dialogs; cancel/Escape preserves the original rule. Rule deletion has its own confirmation; Move to trash is available only in the configuration tab. Confirming a rule still requires saving and publishing the Host.
+
+For example, path operator directory with value /admin uses string comparisons cover /admin and /admin/... without matching /administrator or using regex. Plain prefix /admin/ matches only that prefix. Conditions support existing host/path/ip/ua/method/header/cookie/session sources and equals/prefix/directory/contains/regex/cidr/exists operators; directory is path-only. Paths use decoded ingress URL.Path. IP uses existing request.ClientIp() without changing ingress trust.
+
+Each ACLGrant has ANDed Conditions and an optional go/js Script predicate; grants are ORed. True satisfies that grant; false, exception, timeout or non-boolean output does not allow access, but another grant may. Native grants run before scripted grants. Script input copies expose host/path/method/ip/ua/session, canonical header-name to string-array maps, and cookie maps. Bodies are untouched. SafeMode, 16384-byte code limit, 10ms default TimeoutMS (1–100ms) and request cancellation apply. Client-supplied fields are not authentication by themselves.
+
+ACLRule fields: ID, Enabled, Scope, Allow, Mode (enforce default/observe). ACLGrant fields: Conditions, Script, TimeoutMS. Observe records only. Maximum 100 scopes, 100 grants per scope and 20 conditions per set. ACL runs before limits, rewrites, proxy/static responses and WebSocket handshakes; existing connections remain open.
+
+NewACL compiles a concurrent policy; ACL.Evaluate returns the final ACLDecision. Native evaluation uses no Redis or JS. Drafts, publication, rollback, restart and node sync retain policy. Public Preview evaluates ingress ACL; config checks, monitor routing and direct upstream probes do not. Script changes retain the administrator boundary; API keys may edit declarative conditions.
+
+The first development build's Action/Conditions/Script rules retain ordered compatibility. New scopes run first so legacy allow cannot bypass them. The editor converts only the provably equivalent two-rule allow→deny template; other legacy policies retain their semantics. Gateway remains L7-only; no L4 mode or system networking management is introduced.
 
 ## Session affinity
 
