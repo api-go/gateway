@@ -1,11 +1,11 @@
 package gateway_test
 
 import (
-	"apigo.cc/go/cast"
-	gateway "apigo.cc/go/gateway/core"
-	gohttp "apigo.cc/go/http"
-	"apigo.cc/go/safe"
-	"apigo.cc/go/service"
+	"github.com/api-go/cast"
+	gateway "github.com/api-go/gateway/core"
+	gohttp "github.com/api-go/http"
+	"github.com/api-go/safe"
+	"github.com/api-go/service"
 	"io"
 	"net/http"
 	"net/http/httptest"

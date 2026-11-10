@@ -2,7 +2,7 @@
 
 [English](README.en.md)
 
-基于 `apigo.cc/go/service` 的动态网关。**v1.5.25** 提供管理后台、ACL、Host 回收站、独立限流与集中证书管理，依赖已发布的 Service v1.5.52、Discover v1.5.21、API v1.5.21、JS v1.5.17。此处以实际实现为准。
+基于 `github.com/api-go/service` 的动态网关。**v1.5.25** 提供管理后台、ACL、Host 回收站、独立限流与集中证书管理，依赖已发布的 Service v1.5.52、Discover v1.5.21、API v1.5.21、JS v1.5.17。此处以实际实现为准。
 
 Redis 通知订阅随 GatewayApp 启动与停止，管理配置和旧路由通知及时生效。
 
@@ -38,7 +38,7 @@ ACL:
 
 前缀 `/admin/` 仅覆盖该前缀；例如手动配置 `Operator: directory, Value: /admin`，用字符串比较覆盖 `/admin` 及 `/admin/...`，不匹配 `/administrator`，无需正则。范围及放行条件复用 Host/Path/IP/UA/method/header/cookie/session 与 equals/prefix/directory/contains/regex/cidr/exists；directory 只用于 Path。Path 是进入网关时的已解码路径。IP 直接使用既有 `request.ClientIp()`，不改变信任或转发机制。
 
-每个 `Allow` 元素是 `ACLGrant`：`Conditions` 内部 AND，多个 grant 之间 OR；高级条件和脚本无需额外名称。可选 `Script` 是 `apigo.cc/go/js` 匿名布尔函数，作为该 grant 的额外条件：
+每个 `Allow` 元素是 `ACLGrant`：`Conditions` 内部 AND，多个 grant 之间 OR；高级条件和脚本无需额外名称。可选 `Script` 是 `github.com/api-go/js` 匿名布尔函数，作为该 grant 的额外条件：
 
 ```javascript
 function(request) { return request.method === 'GET'; }
@@ -90,7 +90,7 @@ gateway:
 
 `AdminDisabled: true` 关闭后台监听；AdminListen 可覆盖地址或端口，包括 `127.0.0.1:81`。修改管理监听或开关后重启服务。独立管理监听使用 HTTP，可按需要经具有 HTTPS 的受控入口访问。低端口绑定要求取决于系统权限，无法绑定会报错，不会静默换端口。旧工作区的多账号数据不再用于登录，需要运行上述命令设置单一密码。
 
-发布版使用已发布的 Service v1.5.50 和 Discover v1.5.19，不含本地 replace；可在不保留相邻模块 checkout 的情况下独立编译。根目录 CLI 保持兼容，可复用的 Go API 位于 `apigo.cc/go/gateway/core`。
+发布版使用已发布的 Service v1.5.50 和 Discover v1.5.19，不含本地 replace；可在不保留相邻模块 checkout 的情况下独立编译。根目录 CLI 保持兼容，可复用的 Go API 位于 `github.com/api-go/gateway/core`。
 
 ## 会话保持与节点同步
 

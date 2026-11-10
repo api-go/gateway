@@ -16,4 +16,4 @@
     affinity_shards_test.go:423: SHARD RESULT noClientCookie=true notificationGapRecovered=true staleVersionRejected=true masterBefore=gw-0 masterAfter=gw-1
 --- PASS: TestGradualAffinityShardCluster (105.32s)
 PASS
-ok  	apigo.cc/go/gateway/core	107.058s
+ok  	github.com/api-go/gateway/core	107.058s

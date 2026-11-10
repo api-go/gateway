@@ -1,13 +1,13 @@
 package gateway_test
 
 import (
-	"apigo.cc/go/cast"
-	"apigo.cc/go/file"
-	"apigo.cc/go/gateway/core"
-	"apigo.cc/go/log"
-	"apigo.cc/go/redis"
-	"apigo.cc/go/safe"
-	"apigo.cc/go/service"
+	"github.com/api-go/cast"
+	"github.com/api-go/file"
+	"github.com/api-go/gateway/core"
+	"github.com/api-go/log"
+	"github.com/api-go/redis"
+	"github.com/api-go/safe"
+	"github.com/api-go/service"
 	"bytes"
 	"context"
 	"crypto/ecdsa"

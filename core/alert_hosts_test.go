@@ -13,14 +13,14 @@ import (
 	"testing"
 	"time"
 
-	"apigo.cc/go/cast"
-	goCrypto "apigo.cc/go/crypto"
-	"apigo.cc/go/file"
-	gateway "apigo.cc/go/gateway/core"
-	"apigo.cc/go/log"
-	"apigo.cc/go/redis"
-	"apigo.cc/go/safe"
-	"apigo.cc/go/service"
+	"github.com/api-go/cast"
+	goCrypto "github.com/api-go/crypto"
+	"github.com/api-go/file"
+	gateway "github.com/api-go/gateway/core"
+	"github.com/api-go/log"
+	"github.com/api-go/redis"
+	"github.com/api-go/safe"
+	"github.com/api-go/service"
 )
 
 func updateAlert(t *testing.T, m *gateway.Manager, channel gateway.AlertChannel) gateway.AlertChannel {

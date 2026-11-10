@@ -1,7 +1,7 @@
 package gateway
 
 import (
-	"apigo.cc/go/service"
+	"github.com/api-go/service"
 	"fmt"
 	"net/http"
 	"net/http/httptest"

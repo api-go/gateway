@@ -1,13 +1,13 @@
 package gateway
 
 import (
-	"apigo.cc/go/cast"
-	"apigo.cc/go/config"
-	"apigo.cc/go/discover"
-	"apigo.cc/go/log"
-	"apigo.cc/go/redis"
-	"apigo.cc/go/service"
-	"apigo.cc/go/task"
+	"github.com/api-go/cast"
+	"github.com/api-go/config"
+	"github.com/api-go/discover"
+	"github.com/api-go/log"
+	"github.com/api-go/redis"
+	"github.com/api-go/service"
+	"github.com/api-go/task"
 	"context"
 	"fmt"
 	redisDriver "github.com/gomodule/redigo/redis"

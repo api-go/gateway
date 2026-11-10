@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"apigo.cc/go/discover"
-	gateway "apigo.cc/go/gateway/core"
-	"apigo.cc/go/service"
+	"github.com/api-go/discover"
+	gateway "github.com/api-go/gateway/core"
+	"github.com/api-go/service"
 	"github.com/gorilla/websocket"
 )
 

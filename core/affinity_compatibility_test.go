@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"apigo.cc/go/cast"
-	"apigo.cc/go/discover"
-	gateway "apigo.cc/go/gateway/core"
-	"apigo.cc/go/service"
+	"github.com/api-go/cast"
+	"github.com/api-go/discover"
+	gateway "github.com/api-go/gateway/core"
+	"github.com/api-go/service"
 )
 
 // This is the serialized scope of the previous development build, including

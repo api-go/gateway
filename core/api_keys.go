@@ -1,9 +1,9 @@
 package gateway
 
 import (
-	goCrypto "apigo.cc/go/crypto"
-	"apigo.cc/go/encoding"
-	"apigo.cc/go/safe"
+	goCrypto "github.com/api-go/crypto"
+	"github.com/api-go/encoding"
+	"github.com/api-go/safe"
 	"crypto/subtle"
 	"errors"
 	"fmt"

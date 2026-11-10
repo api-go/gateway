@@ -1,13 +1,13 @@
 package gateway_test
 
 import (
-	"apigo.cc/go/cast"
-	"apigo.cc/go/gateway/core"
-	"apigo.cc/go/log"
-	"apigo.cc/go/redis"
-	"apigo.cc/go/service"
-	"apigo.cc/go/shell"
-	"apigo.cc/go/timer"
+	"github.com/api-go/cast"
+	"github.com/api-go/gateway/core"
+	"github.com/api-go/log"
+	"github.com/api-go/redis"
+	"github.com/api-go/service"
+	"github.com/api-go/shell"
+	"github.com/api-go/timer"
 	"fmt"
 	"net"
 	"net/http/httptest"

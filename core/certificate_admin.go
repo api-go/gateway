@@ -1,7 +1,7 @@
 package gateway
 
 import (
-	"apigo.cc/go/safe"
+	"github.com/api-go/safe"
 	"crypto/tls"
 	"errors"
 	"fmt"

@@ -18,4 +18,4 @@
 --- PASS: TestGradualSnapshotCapacityCountsSessionBindings (0.18s)
     affinity_sync_test.go:152: SYNC RESULT snapshot=20000 replay=1000 gapRecovery=21001 journalBytes=541
 --- PASS: TestAffinitySnapshotReplayAndPeerAuthentication (29.28s)
-ok  	apigo.cc/go/gateway/core	145.475s
+ok  	github.com/api-go/gateway/core	145.475s

@@ -1,10 +1,10 @@
 package gateway
 
 import (
-	"apigo.cc/go/crypto"
-	"apigo.cc/go/file"
-	"apigo.cc/go/safe"
-	"apigo.cc/go/service"
+	"github.com/api-go/crypto"
+	"github.com/api-go/file"
+	"github.com/api-go/safe"
+	"github.com/api-go/service"
 	"context"
 	"crypto/tls"
 	"crypto/x509"

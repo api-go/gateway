@@ -1,9 +1,9 @@
 package gateway
 
 import (
-	"apigo.cc/go/cast"
-	"apigo.cc/go/log"
-	"apigo.cc/go/redis"
+	"github.com/api-go/cast"
+	"github.com/api-go/log"
+	"github.com/api-go/redis"
 	"fmt"
 	"net"
 	"sort"

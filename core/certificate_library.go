@@ -1,8 +1,8 @@
 package gateway
 
 import (
-	"apigo.cc/go/cast"
-	"apigo.cc/go/safe"
+	"github.com/api-go/cast"
+	"github.com/api-go/safe"
 	"context"
 	"crypto/tls"
 	"crypto/x509"

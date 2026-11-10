@@ -1,14 +1,14 @@
 package gateway
 
 import (
-	"apigo.cc/go/cast"
+	"github.com/api-go/cast"
 	"fmt"
 	"net"
 	"sort"
 	"time"
 
-	"apigo.cc/go/js"
-	"apigo.cc/go/service"
+	"github.com/api-go/js"
+	"github.com/api-go/service"
 )
 
 // ACLRule protects Scope (AND). Inside that scope at least one Allow grant

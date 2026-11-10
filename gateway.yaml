@@ -1,0 +1,3 @@
+# Gateway management; explicit listen avoids reselecting after network changes.
+AdminDisabled: false
+AdminListen: "127.0.0.1:1081"

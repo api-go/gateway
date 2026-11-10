@@ -1,5 +1,5 @@
 package main
 
-import "apigo.cc/go/gateway/core"
+import "github.com/api-go/gateway/core"
 
 func main() { gateway.Run() }

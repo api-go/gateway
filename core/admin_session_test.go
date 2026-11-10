@@ -1,10 +1,10 @@
 package gateway_test
 
 import (
-	"apigo.cc/go/file"
-	gateway "apigo.cc/go/gateway/core"
-	"apigo.cc/go/safe"
-	"apigo.cc/go/service"
+	"github.com/api-go/file"
+	gateway "github.com/api-go/gateway/core"
+	"github.com/api-go/safe"
+	"github.com/api-go/service"
 	"net/http"
 	"os"
 	"path/filepath"

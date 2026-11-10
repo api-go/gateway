@@ -230,7 +230,7 @@
 - 证书页面补充 SAN 自动读取、名称备注、泛域名覆盖和 PEM 私钥说明后，22 项 Chrome/Playwright 验收再次通过；Node VM 检查 Redis 共享密钥已配置/缺失提示通过。Settings 只新增 sharedCertificateKey 布尔状态，不返回密钥值。
 - TestPreviewProxyTargetWithoutPath 覆盖 llm、llm/、无路径 HTTP/HTTPS 地址的整站目标预览及查询参数保留；代理应用名、协议要求与空目标说明的 Node VM 渲染检查通过。
 - 依赖审计与 `go mod tidy` 后复测通过：Cast v1.5.8、Log v1.5.17、Redis v1.5.19、Starter v1.5.12、Task v1.5.13；未使用本地 replace。Redis 外部集成未启用，相应测试按设计跳过。
-- `ai/tools/getExports` 在本工作区不可用，使用 `GOWORK=off go doc -all apigo.cc/go/gateway/core` 与导出源码交叉核对 README 的 API 表；本次未新增 Go API。
+- `ai/tools/getExports` 在本工作区不可用，使用 `GOWORK=off go doc -all github.com/api-go/gateway/core` 与导出源码交叉核对 README 的 API 表；本次未新增 Go API。
 - Apple M3 Max Benchmark：NewGatewayApp 20.73 ns/op、64 B/op、1 alloc/op；LimiterIPWindow 1382 ns/op、1305 B/op、21 allocs/op；PublishedHostQuota 5063 ns/op、3633 B/op、82 allocs/op。
 
 ## v1.5.11 发布验证（2026-10-06）
@@ -451,3 +451,13 @@ BenchmarkMonitorCheck-16              	     201	   5964082 ns/op
 
 - GOWORK=off 使用正式依赖 Discover v1.5.21、Redis v1.5.22、Service v1.5.52；全量测试、go vet 和 Gateway core race 通过。
 - Gateway core race：68.172s；无源码依赖替换进入正式 go.mod。
+
+## GitHub migration validation (pending release)
+
+Module paths and internal dependency versions are migrated. Development verification uses GOWORK=off and explicit sibling replacements; remove these replacements before release. See migration validation logs for actual results. Existing unrelated working changes are preserved and require separate review.
+
+API inventory verification: `GOWORK=off go doc` succeeded; output retained in the migration validation directory. Source exports were preserved by the path migration.
+
+## GitHub release verification
+
+GOWORK=off go test -v ./... and go test -bench=. ./... passed using published GitHub dependencies, without local replacements. go mod verify passed.

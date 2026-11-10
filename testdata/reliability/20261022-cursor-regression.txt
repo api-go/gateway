@@ -1,6 +1,6 @@
 --- PASS: TestGradualSnapshotCapacityCountsSessionBindings (0.13s)
     affinity_sync_test.go:152: SYNC RESULT snapshot=600 replay=10 gapRecovery=611 journalBytes=541
-ok  	apigo.cc/go/gateway/core	8.365s
+ok  	github.com/api-go/gateway/core	8.365s
 --- PASS: TestGradualSnapshotCapacityCountsSessionBindings (0.23s)
     affinity_sync_test.go:152: SYNC RESULT snapshot=600 replay=10 gapRecovery=611 journalBytes=541
 --- PASS: TestGradualSnapshotCapacityCountsSessionBindings (0.19s)
@@ -21,4 +21,4 @@ ok  	apigo.cc/go/gateway/core	8.365s
     affinity_sync_test.go:152: SYNC RESULT snapshot=600 replay=10 gapRecovery=611 journalBytes=541
 --- PASS: TestGradualSnapshotCapacityCountsSessionBindings (0.19s)
     affinity_sync_test.go:152: SYNC RESULT snapshot=600 replay=10 gapRecovery=611 journalBytes=541
-ok  	apigo.cc/go/gateway/core	14.133s
+ok  	github.com/api-go/gateway/core	14.133s

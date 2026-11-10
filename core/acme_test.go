@@ -1,12 +1,12 @@
 package gateway_test
 
 import (
-	"apigo.cc/go/cast"
-	"apigo.cc/go/encoding"
-	"apigo.cc/go/gateway/core"
-	"apigo.cc/go/log"
-	"apigo.cc/go/service"
-	"apigo.cc/go/timer"
+	"github.com/api-go/cast"
+	"github.com/api-go/encoding"
+	"github.com/api-go/gateway/core"
+	"github.com/api-go/log"
+	"github.com/api-go/service"
+	"github.com/api-go/timer"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"

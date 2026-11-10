@@ -5,9 +5,9 @@ import (
 	"os/exec"
 	"testing"
 
-	"apigo.cc/go/cast"
-	gateway "apigo.cc/go/gateway/core"
-	"apigo.cc/go/service"
+	"github.com/api-go/cast"
+	gateway "github.com/api-go/gateway/core"
+	"github.com/api-go/service"
 )
 
 func TestPermanentAPIKeyZeroInstantAcrossTimezones(t *testing.T) {

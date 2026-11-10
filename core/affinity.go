@@ -1,8 +1,8 @@
 package gateway
 
 import (
-	"apigo.cc/go/discover"
-	"apigo.cc/go/service"
+	"github.com/api-go/discover"
+	"github.com/api-go/service"
 	"context"
 	"crypto/sha256"
 	"fmt"

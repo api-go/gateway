@@ -1,6 +1,6 @@
 release-v1.5.19-full.log
-?   	apigo.cc/go/gateway	[no test files]
-?   	apigo.cc/go/gateway/cmd/gateway	[no test files]
+?   	github.com/api-go/gateway	[no test files]
+?   	github.com/api-go/gateway/cmd/gateway	[no test files]
 === RUN   TestACMEHTTP01IssuanceAndEncryptedCache
 --- PASS: TestACMEHTTP01IssuanceAndEncryptedCache (0.15s)
 === RUN   TestUninitializedAdminLockedAndCommandPasswordSurvivesRestart
@@ -210,13 +210,13 @@ release-v1.5.19-full.log
 === RUN   TestPublishedProxyRetainsWebSocketRejection
 --- PASS: TestPublishedProxyRetainsWebSocketRejection (0.06s)
 PASS
-ok  	apigo.cc/go/gateway/core	116.885s
+ok  	github.com/api-go/gateway/core	116.885s
 release-v1.5.19-bench.log
-?   	apigo.cc/go/gateway	[no test files]
-?   	apigo.cc/go/gateway/cmd/gateway	[no test files]
+?   	github.com/api-go/gateway	[no test files]
+?   	github.com/api-go/gateway/cmd/gateway	[no test files]
 goos: linux
 goarch: amd64
-pkg: apigo.cc/go/gateway/core
+pkg: github.com/api-go/gateway/core
 cpu: 12th Gen Intel(R) Core(TM) i5-12400F
 BenchmarkAffinityHashProxy-3        	    5772	    203291 ns/op	   93735 B/op	    1100 allocs/op
 BenchmarkAffinityAutomaticProxy-3   	    5361	    199480 ns/op	   94017 B/op	    1100 allocs/op
@@ -227,4 +227,4 @@ BenchmarkLimiterIPWindow-3          	  615895	      2029 ns/op	    1304 B/op	   
 BenchmarkPublishedHostQuota-3       	  143946	      7666 ns/op	    3721 B/op	      88 allocs/op
 BenchmarkMonitorCheck-3             	     553	   2194921 ns/op
 PASS
-ok  	apigo.cc/go/gateway/core	9.805s
+ok  	github.com/api-go/gateway/core	9.805s

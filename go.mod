@@ -1,26 +1,26 @@
-module apigo.cc/go/gateway
+module github.com/api-go/gateway
 
 go 1.25.0
 
 require (
-	apigo.cc/go/api v1.5.21
-	apigo.cc/go/cast v1.5.8
-	apigo.cc/go/config v1.5.8
-	apigo.cc/go/crypto v1.5.9
-	apigo.cc/go/discover v1.5.21
-	apigo.cc/go/encoding v1.5.8
-	apigo.cc/go/file v1.5.9
-	apigo.cc/go/http v1.5.16
-	apigo.cc/go/js v1.5.17
-	apigo.cc/go/log v1.5.17
-	apigo.cc/go/rand v1.5.4
-	apigo.cc/go/redis v1.5.22
-	apigo.cc/go/safe v1.5.4
-	apigo.cc/go/service v1.5.52
-	apigo.cc/go/shell v1.5.8
-	apigo.cc/go/starter v1.5.14
-	apigo.cc/go/task v1.5.15
-	apigo.cc/go/timer v1.5.0
+	github.com/api-go/api v1.5.22
+	github.com/api-go/cast v1.5.9
+	github.com/api-go/config v1.5.9
+	github.com/api-go/crypto v1.5.10
+	github.com/api-go/discover v1.5.22
+	github.com/api-go/encoding v1.5.9
+	github.com/api-go/file v1.5.10
+	github.com/api-go/http v1.5.17
+	github.com/api-go/js v1.5.18
+	github.com/api-go/log v1.5.18
+	github.com/api-go/rand v1.5.5
+	github.com/api-go/redis v1.5.23
+	github.com/api-go/safe v1.5.5
+	github.com/api-go/service v1.5.53
+	github.com/api-go/shell v1.5.9
+	github.com/api-go/starter v1.5.15
+	github.com/api-go/task v1.5.16
+	github.com/api-go/timer v1.5.1
 	github.com/gomodule/redigo v1.9.3
 	github.com/gorilla/websocket v1.5.3
 	golang.org/x/crypto v0.52.0
@@ -29,9 +29,9 @@ require (
 )
 
 require (
-	apigo.cc/go/id v1.5.9 // indirect
-	apigo.cc/go/jsmod v1.5.5 // indirect
-	apigo.cc/go/watch v1.5.10 // indirect
+	github.com/api-go/id v1.5.10 // indirect
+	github.com/api-go/jsmod v1.5.6 // indirect
+	github.com/api-go/watch v1.5.11 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/dop251/goja v0.0.0-20260311135729-065cd970411c // indirect
 	github.com/evanw/esbuild v0.28.2 // indirect

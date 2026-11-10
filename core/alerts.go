@@ -1,12 +1,12 @@
 package gateway
 
 import (
-	goapi "apigo.cc/go/api"
-	"apigo.cc/go/cast"
-	goCrypto "apigo.cc/go/crypto"
-	"apigo.cc/go/encoding"
-	"apigo.cc/go/log"
-	"apigo.cc/go/safe"
+	goapi "github.com/api-go/api"
+	"github.com/api-go/cast"
+	goCrypto "github.com/api-go/crypto"
+	"github.com/api-go/encoding"
+	"github.com/api-go/log"
+	"github.com/api-go/safe"
 	"context"
 	"errors"
 	"fmt"

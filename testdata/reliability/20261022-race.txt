@@ -179,4 +179,4 @@
     --- PASS: TestAffinityAcrossManagersAndSources/ip (6.24s)
 --- PASS: TestRedisAffinitySharedMapping (0.24s)
 PASS
-ok  	apigo.cc/go/gateway/core	321.645s
+ok  	github.com/api-go/gateway/core	321.645s

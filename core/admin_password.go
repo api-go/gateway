@@ -1,10 +1,10 @@
 package gateway
 
 import (
-	"apigo.cc/go/file"
-	"apigo.cc/go/log"
-	"apigo.cc/go/redis"
-	"apigo.cc/go/safe"
+	"github.com/api-go/file"
+	"github.com/api-go/log"
+	"github.com/api-go/redis"
+	"github.com/api-go/safe"
 	"bytes"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"

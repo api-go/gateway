@@ -1,7 +1,7 @@
 package gateway
 
 import (
-	"apigo.cc/go/discover"
+	"github.com/api-go/discover"
 	"sort"
 	"strings"
 )

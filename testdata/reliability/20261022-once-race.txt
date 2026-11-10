@@ -22,4 +22,4 @@
     affinity_sync_test.go:152: SYNC RESULT snapshot=20000 replay=1000 gapRecovery=21001 journalBytes=4776
 --- PASS: TestAffinitySnapshotReplayAndPeerAuthentication (29.76s)
 --- PASS: TestClusterAdministratorPasswordSharedAndReset (3.90s)
-ok  	apigo.cc/go/gateway/core	175.284s
+ok  	github.com/api-go/gateway/core	175.284s

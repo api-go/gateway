@@ -2,7 +2,7 @@
 
 [中文文档](README.md)
 
-Dynamic HTTP gateway built on `apigo.cc/go/service`, with Host drafts, publication and rollback, adaptive HTTPS, quotas, service discovery, monitoring and signed robot alerts.
+Dynamic HTTP gateway built on `github.com/api-go/service`, with Host drafts, publication and rollback, adaptive HTTPS, quotas, service discovery, monitoring and signed robot alerts.
 
 ## Host trash
 
@@ -117,7 +117,7 @@ Back up DataDir and Redis state together with their persistent encryption keys. 
 
 ## Go API
 
-The reusable package is `apigo.cc/go/gateway/core`; the module root remains the CLI.
+The reusable package is `github.com/api-go/gateway/core`; the module root remains the CLI.
 
 | API | Purpose |
 | --- | --- |

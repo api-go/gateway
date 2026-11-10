@@ -1,8 +1,8 @@
 package gateway
 
 import (
-	"apigo.cc/go/file"
-	"apigo.cc/go/log"
+	"github.com/api-go/file"
+	"github.com/api-go/log"
 	"fmt"
 	"path/filepath"
 	"strings"

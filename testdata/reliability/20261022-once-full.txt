@@ -122,4 +122,4 @@
 --- PASS: TestUpstreamDiscoveryAndCancellation (0.06s)
 --- PASS: TestPublishedProxySharesHTTP2AndWebSocketTLSListener (0.06s)
 --- PASS: TestPublishedProxyRetainsWebSocketRejection (0.06s)
-ok  	apigo.cc/go/gateway/core	117.777s
+ok  	github.com/api-go/gateway/core	117.777s

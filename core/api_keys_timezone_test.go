@@ -1,15 +1,15 @@
 package gateway_test
 
 import (
-	"apigo.cc/go/file"
+	"github.com/api-go/file"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
-	"apigo.cc/go/cast"
-	gateway "apigo.cc/go/gateway/core"
-	"apigo.cc/go/service"
+	"github.com/api-go/cast"
+	gateway "github.com/api-go/gateway/core"
+	"github.com/api-go/service"
 )
 
 func TestPermanentAPIKeySurvivesShanghaiPersistence(t *testing.T) {

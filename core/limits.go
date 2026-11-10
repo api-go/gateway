@@ -1,10 +1,10 @@
 package gateway
 
 import (
-	"apigo.cc/go/cast"
-	goCrypto "apigo.cc/go/crypto"
-	"apigo.cc/go/redis"
-	"apigo.cc/go/service"
+	"github.com/api-go/cast"
+	goCrypto "github.com/api-go/crypto"
+	"github.com/api-go/redis"
+	"github.com/api-go/service"
 	"fmt"
 	"net"
 	"net/http"

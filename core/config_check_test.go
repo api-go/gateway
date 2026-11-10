@@ -1,8 +1,8 @@
 package gateway_test
 
 import (
-	gateway "apigo.cc/go/gateway/core"
-	"apigo.cc/go/service"
+	gateway "github.com/api-go/gateway/core"
+	"github.com/api-go/service"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"

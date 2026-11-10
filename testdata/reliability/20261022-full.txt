@@ -148,4 +148,4 @@
 --- PASS: TestPublishedProxySharesHTTP2AndWebSocketTLSListener (0.06s)
 --- PASS: TestPublishedProxyRetainsWebSocketRejection (0.06s)
 PASS
-ok  	apigo.cc/go/gateway/core	32.537s
+ok  	github.com/api-go/gateway/core	32.537s

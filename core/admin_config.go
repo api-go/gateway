@@ -1,9 +1,9 @@
 package gateway
 
 import (
-	"apigo.cc/go/encoding"
-	"apigo.cc/go/file"
-	"apigo.cc/go/safe"
+	"github.com/api-go/encoding"
+	"github.com/api-go/file"
+	"github.com/api-go/safe"
 	"fmt"
 	"net"
 	"net/netip"

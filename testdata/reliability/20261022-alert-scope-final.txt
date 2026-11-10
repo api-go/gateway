@@ -20,7 +20,7 @@
 --- PASS: TestMonitorCorruptHistoryDoesNotBlockOtherHosts (0.69s)
 --- PASS: TestMonitorClusterLeaseAndSharedHistory (0.70s)
 --- PASS: TestMonitorGatewayAppSchedulesAndStops (0.12s)
-ok  	apigo.cc/go/gateway/core	27.888s
+ok  	github.com/api-go/gateway/core	27.888s
 --- PASS: TestACMEHTTP01IssuanceAndEncryptedCache (0.13s)
 --- PASS: TestUninitializedAdminLockedAndCommandPasswordSurvivesRestart (0.22s)
 --- PASS: TestGeneratedAdminConfigPreservesExistingAndDefaultIsPrivate (0.00s)
@@ -107,4 +107,4 @@ ok  	apigo.cc/go/gateway/core	27.888s
 --- PASS: TestUpstreamDiscoveryAndCancellation (0.06s)
 --- PASS: TestPublishedProxySharesHTTP2AndWebSocketTLSListener (0.06s)
 --- PASS: TestPublishedProxyRetainsWebSocketRejection (0.06s)
-ok  	apigo.cc/go/gateway/core	9.519s
+ok  	github.com/api-go/gateway/core	9.519s

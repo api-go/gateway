@@ -1,6 +1,6 @@
 package main
 
-import "apigo.cc/go/gateway/core"
+import "github.com/api-go/gateway/core"
 
 // Compatibility entry points for the original command package.
 type Config = gateway.Config

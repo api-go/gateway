@@ -1,8 +1,8 @@
 package gateway
 
 import (
-	"apigo.cc/go/cast"
-	"apigo.cc/go/file"
+	"github.com/api-go/cast"
+	"github.com/api-go/file"
 	"encoding/json"
 	"fmt"
 	"path/filepath"

@@ -1,10 +1,10 @@
 package gateway
 
 import (
-	"apigo.cc/go/config"
-	"apigo.cc/go/log"
-	"apigo.cc/go/service"
-	"apigo.cc/go/starter"
+	"github.com/api-go/config"
+	"github.com/api-go/log"
+	"github.com/api-go/service"
+	"github.com/api-go/starter"
 	"fmt"
 	"os"
 	"time"
@@ -48,8 +48,8 @@ func Run() {
 	})
 	// 2. 初始化 Starter 信息
 	starter.SetAppInfo("gateway", "1.5.25")
-	starter.SetUsage(`High-performance API gateway based on apigo.cc/go/service.
-Full Guide: https://apigo.cc/go/service
+	starter.SetUsage(`High-performance API gateway based on github.com/api-go/service.
+Full Guide: https://github.com/api-go/service
 
 Example env.yml:
   service:

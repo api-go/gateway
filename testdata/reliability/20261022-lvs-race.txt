@@ -27,4 +27,4 @@
     --- PASS: TestAffinityRandomGatewayLVS/auto (30.68s)
     --- PASS: TestAffinityRandomGatewayLVS/hash (32.33s)
     --- PASS: TestAffinityRandomGatewayLVS/manual (31.47s)
-ok  	apigo.cc/go/gateway/core	239.979s
+ok  	github.com/api-go/gateway/core	239.979s

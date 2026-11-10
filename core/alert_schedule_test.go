@@ -1,13 +1,13 @@
 package gateway_test
 
 import (
-	"apigo.cc/go/cast"
-	goCrypto "apigo.cc/go/crypto"
-	"apigo.cc/go/encoding"
-	"apigo.cc/go/file"
-	gateway "apigo.cc/go/gateway/core"
-	"apigo.cc/go/js"
-	"apigo.cc/go/service"
+	"github.com/api-go/cast"
+	goCrypto "github.com/api-go/crypto"
+	"github.com/api-go/encoding"
+	"github.com/api-go/file"
+	gateway "github.com/api-go/gateway/core"
+	"github.com/api-go/js"
+	"github.com/api-go/service"
 	"context"
 	"io"
 	"net/http"

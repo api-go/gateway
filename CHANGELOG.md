@@ -1,3 +1,7 @@
+## [v1.5.26] - 2026-11-10
+
+- 迁移至 github.com/api-go/gateway，同步内部模块路径与依赖。
+
 ## [v1.5.25] - 2026-11-02
 - Host 删除改为移入回收站，保留草稿、发布配置、历史、加密凭据及删除人/时间；支持恢复及仅针对回收站记录的永久删除，沿用 Redis CAS、同步、持久化及审计。
 - 恢复重新启用原已发布配置，保留独立草稿；域名冲突拒绝恢复。新增 Manager.Trash/Restore/Purge、DeletedHost、管理及按 Host 授权的程序 API。
@@ -127,7 +131,7 @@
 - **依赖对齐**: 补齐 `service`、`discover`、`http`、`redis`、`starter` 与 `watch` 的级联版本。
 
 ## v1.5.7 (2026-09-05)
-- **依赖对齐**: 升级全部 `apigo.cc/go/*` 依赖至当前已发布版本。
+- **依赖对齐**: 升级全部 `github.com/api-go/*` 依赖至当前已发布版本。
 
 ## v1.5.6 (2026-07-19)
 - **依赖链升级**: 升级 `service` 至 `v1.5.22`、`discover` 至 `v1.5.8`，对齐 Redis 类型化服务发现流程。
@@ -164,8 +168,8 @@
 - **Copy-on-Write 无锁生效**: 基于新版 `service` 的原子替换能力，实现动态配置 100% 零锁耗变更，消除请求抖动 (Jitter)。
 - **精准局部热更**: 引入了按照 `Host` 域名进行空间隔离的 Redis Hash 配置结构。结合 Pub/Sub，实现“指哪打哪”的配置精准下发。
 - **降维打击重构**:
-  - 用 `apigo.cc/go/redis` 替换臃肿的 `redigo`。
-  - 用 `apigo.cc/go/service` 和 `apigo.cc/go/starter` 接管所有的生命周期 (SIGHUP 监听、PID 文件处理)。
+  - 用 `github.com/api-go/redis` 替换臃肿的 `redigo`。
+  - 用 `github.com/api-go/service` 和 `github.com/api-go/starter` 接管所有的生命周期 (SIGHUP 监听、PID 文件处理)。
   - 彻底废除了耗费性能且脆弱的 `time.Sleep` 轮询架构，全切为事件驱动 + 启动兜底。
-  - `apigo.cc/go/discover` 进行更轻薄的原生对接。
+  - `github.com/api-go/discover` 进行更轻薄的原生对接。
 - **现代化基建**: JSON 解析全部由原生的 `encoding/json` 与 `go/cast` 组合支撑，移除旧版冗余的反射逻辑。

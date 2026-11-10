@@ -1,14 +1,14 @@
 package gateway_test
 
 import (
-	"apigo.cc/go/cast"
-	"apigo.cc/go/discover"
-	"apigo.cc/go/file"
-	gateway "apigo.cc/go/gateway/core"
-	"apigo.cc/go/log"
-	"apigo.cc/go/redis"
-	"apigo.cc/go/service"
-	"apigo.cc/go/timer"
+	"github.com/api-go/cast"
+	"github.com/api-go/discover"
+	"github.com/api-go/file"
+	gateway "github.com/api-go/gateway/core"
+	"github.com/api-go/log"
+	"github.com/api-go/redis"
+	"github.com/api-go/service"
+	"github.com/api-go/timer"
 	"context"
 	"fmt"
 	"io"

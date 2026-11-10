@@ -1,9 +1,9 @@
 package gateway
 
 import (
-	"apigo.cc/go/cast"
-	"apigo.cc/go/encoding"
-	"apigo.cc/go/timer"
+	"github.com/api-go/cast"
+	"github.com/api-go/encoding"
+	"github.com/api-go/timer"
 	"context"
 	"crypto/sha256"
 	"fmt"

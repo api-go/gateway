@@ -1,8 +1,8 @@
 package gateway
 
 import (
-	gohttp "apigo.cc/go/http"
-	"apigo.cc/go/service"
+	gohttp "github.com/api-go/http"
+	"github.com/api-go/service"
 	"fmt"
 	"net"
 	"net/url"

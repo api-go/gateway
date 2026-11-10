@@ -15,4 +15,4 @@
 --- PASS: TestMonitorCorruptHistoryDoesNotBlockOtherHosts (0.67s)
 --- PASS: TestMonitorClusterLeaseAndSharedHistory (0.66s)
 --- PASS: TestMonitorGatewayAppSchedulesAndStops (0.13s)
-ok  	apigo.cc/go/gateway/core	18.276s
+ok  	github.com/api-go/gateway/core	18.276s
