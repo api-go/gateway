@@ -461,3 +461,7 @@ API inventory verification: `GOWORK=off go doc` succeeded; output retained in th
 ## GitHub release verification
 
 GOWORK=off go test -v ./... and go test -bench=. ./... passed using published GitHub dependencies, without local replacements. go mod verify passed.
+
+## GitHub release verification
+
+GOWORK=off go test -v ./... and go test -bench=. ./... passed using published GitHub dependencies, without local replacements. go mod verify passed.
