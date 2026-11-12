@@ -1,9 +1,9 @@
 package gateway
 
 import (
+	"fmt"
 	"github.com/api-go/file"
 	"github.com/api-go/log"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -32,12 +32,19 @@ func PruneGatewayLogs(conf log.Config, days int, now time.Time) error {
 		if entry.IsDir || !strings.HasPrefix(entry.Name, prefix) {
 			continue
 		}
-		date, err := time.ParseInLocation(conf.SplitTag, strings.TrimPrefix(entry.Name, prefix), now.Location())
-		if err != nil || !date.Before(cutoff) || entry.Name == prefix+now.Format(conf.SplitTag) {
+		name := strings.TrimSuffix(strings.TrimSuffix(entry.Name, ".gz"), ".dict")
+		date, err := time.ParseInLocation(conf.SplitTag, strings.TrimPrefix(name, prefix), now.Location())
+		if err != nil || !date.Before(cutoff) || name == prefix+now.Format(conf.SplitTag) {
 			continue
 		}
-		if err := file.Remove(entry.FullName); err != nil {
-			return err
+		// Remove the data before its dictionary; archived pairs share retention.
+		for _, suffix := range []string{".gz", ".dict", ""} {
+			candidate := filepath.Join(directory, name+suffix)
+			if file.Exists(candidate) {
+				if err := file.Remove(candidate); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil

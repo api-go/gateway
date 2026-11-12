@@ -1,12 +1,12 @@
 package gateway_test
 
 import (
+	"context"
 	"github.com/api-go/cast"
 	"github.com/api-go/file"
 	gateway "github.com/api-go/gateway/core"
 	"github.com/api-go/log"
 	"github.com/api-go/service"
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -96,5 +96,41 @@ func TestMonitorFailureHTTPClassification(t *testing.T) {
 				t.Fatal(sample, err)
 			}
 		})
+	}
+}
+
+func TestGatewayCompressedLogRetentionPairs(t *testing.T) {
+	directory := t.TempDir()
+	now := time.Date(2026, 11, 12, 12, 0, 0, 0, time.UTC)
+	for _, name := range []string{"gateway.log.2026-10-01.gz", "gateway.log.2026-10-01.dict", "gateway.log.2026-11-12.gz", "gateway.log.2026-11-12.dict", "gateway.log.2026-10-01.gz.backup"} {
+		if err := file.Write(filepath.Join(directory, name), "fixture"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := gateway.PruneGatewayLogs(log.Config{File: filepath.Join(directory, "gateway.log"), SplitTag: "2006-01-02"}, 30, now); err != nil {
+		t.Fatal(err)
+	}
+	for _, suffix := range []string{".gz", ".dict"} {
+		if file.Exists(filepath.Join(directory, "gateway.log.2026-10-01"+suffix)) {
+			t.Fatal("expired pair retained")
+		}
+		if !file.Exists(filepath.Join(directory, "gateway.log.2026-11-12"+suffix)) {
+			t.Fatal("active pair deleted")
+		}
+	}
+	if !file.Exists(filepath.Join(directory, "gateway.log.2026-10-01.gz.backup")) {
+		t.Fatal("unrelated backup removed")
+	}
+}
+
+func TestGatewayEnablesOnlyProxyCompaction(t *testing.T) {
+	server := service.NewWebServer()
+	m, err := gateway.NewManager(gateway.Config{DataDir: t.TempDir(), AdminDisabled: true}, server)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	if !server.Config.CompactProxyLog || server.Config.NoLogGets {
+		t.Fatal("gateway must compact proxies without suppressing static request logs")
 	}
 }

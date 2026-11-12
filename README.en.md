@@ -194,3 +194,7 @@ Released dependencies select crypto v1.5.9. Shared Symmetric.Decrypt/DecryptByte
 ## v1.5.24
 
 已升级服务发现依赖至 Discover v1.5.21、Service v1.5.52、Redis v1.5.22，以获得 Redis 长时间故障后的异步恢复。
+
+### Logs
+
+Gateway enables compact ProxyLog for proxies instead of duplicate RequestLog. Static files and non-proxy ingress results retain request logs. Bounded redacted diagnostics describe failures, including streams failing after status 200, with the original RequestID as TraceID. `gateway log` defaults to -tail 100 -f and supports ranges, explicit files and JSON/raw output; logv formats stdin or restores .gz plus .dict. Retention removes expired data/dictionary pairs while preserving active files and unrelated backups. Log commands do not start gateway services.

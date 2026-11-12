@@ -1,16 +1,24 @@
 package gateway
 
 import (
+	"fmt"
 	"github.com/api-go/config"
 	"github.com/api-go/log"
 	"github.com/api-go/service"
 	"github.com/api-go/starter"
-	"fmt"
 	"os"
 	"time"
 )
 
 func Run() {
+	// Reading logs must not depend on gateway administration or registry setup.
+	if len(os.Args) > 1 && (os.Args[1] == "log" || os.Args[1] == "logv") {
+		if err := starter.Start(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		return
+	}
+
 	// 1. 加载默认配置，支持覆盖与环境变量注入
 	if err := config.Load(&GatewayConf, "gateway"); err != nil {
 		log.DefaultLogger.Error("gateway configuration failed", "error", err.Error())

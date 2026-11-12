@@ -1,15 +1,14 @@
 package gateway
 
 import (
+	"context"
+	"fmt"
 	"github.com/api-go/cast"
-	"github.com/api-go/config"
 	"github.com/api-go/discover"
 	"github.com/api-go/log"
 	"github.com/api-go/redis"
 	"github.com/api-go/service"
 	"github.com/api-go/task"
-	"context"
-	"fmt"
 	redisDriver "github.com/gomodule/redigo/redis"
 	"net"
 	"net/http"
@@ -114,10 +113,7 @@ func (g *GatewayApp) Start(ctx context.Context, logger *log.Logger) error {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		var conf log.Config
-		if err := config.Load(&conf, "log"); err != nil {
-			return err
-		}
+		conf := log.DefaultConfig()
 		return PruneGatewayLogs(conf, manager.config.LogRetentionDays, time.Now())
 	}, task.Config{Policy: task.PolicySkip, Timeout: 30 * time.Second, SuppressSuccessLog: true})
 	g.scheduler.Start(context.Background(), logger)

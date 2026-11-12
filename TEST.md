@@ -465,3 +465,8 @@ GOWORK=off go test -v ./... and go test -bench=. ./... passed using published Gi
 ## GitHub release verification
 
 GOWORK=off go test -v ./... and go test -bench=. ./... passed using published GitHub dependencies, without local replacements. go mod verify passed.
+
+## 日志集成 — 2026-11-12
+
+- Gateway 默认启用代理精简而不启用 GET 日志抑制；历史明文和压缩/字典配对保留策略、活跃文件及备份保护。
+- 全量回归/基准使用 GODEBUG=http2xconnect=1、GOWORK=off，以及 /tmp/apigo-validation-gateway.mod 显式替换本次本地模块。API 用 go doc 与源码核对。

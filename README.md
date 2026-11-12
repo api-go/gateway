@@ -439,3 +439,7 @@ Optional `ExternalAddress.Mode` and `AdminExternalAddress.Mode`: legacy (interna
 ## v1.5.24
 
 已升级服务发现依赖至 Discover v1.5.21、Service v1.5.52、Redis v1.5.22，以获得 Redis 长时间故障后的异步恢复。
+
+### 日志
+
+Gateway 的代理默认采用精简 ProxyLog，避免重复 RequestLog；静态文件请求保留独立 RequestLog。未进入代理的入口拒绝和未命中仍保留请求结果。代理失败补充有界脱敏诊断，200 后流异常也会记录，TraceID 沿用入口 RequestID。`gateway log` 默认 -tail 100 -f；支持 -cat/-head/-tail、-f、-json/-raw 和显式文件。logv 支持 stdin 和 .gz+.dict 文件。默认实时字典压缩；日志保留策略成对清理 .gz/.dict，保留当前文件和无关备份。查看日志不启动 Gateway 服务。

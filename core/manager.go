@@ -1,6 +1,12 @@
 package gateway
 
 import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
+	"fmt"
 	"github.com/api-go/cast"
 	goCrypto "github.com/api-go/crypto"
 	"github.com/api-go/discover"
@@ -11,12 +17,6 @@ import (
 	"github.com/api-go/redis"
 	"github.com/api-go/safe"
 	"github.com/api-go/service"
-	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
-	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -86,6 +86,7 @@ func NewManager(config Config, server *service.WebServer) (*Manager, error) {
 	if server == nil {
 		server = service.NewWebServer()
 	}
+	server.Config.CompactProxyLog = true
 	if config.Prefix == "" {
 		config.Prefix = "gateway"
 	}
