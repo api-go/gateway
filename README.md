@@ -444,6 +444,11 @@ Optional `ExternalAddress.Mode` and `AdminExternalAddress.Mode`: legacy (interna
 
 Gateway 的代理默认采用精简 ProxyLog，避免重复 RequestLog；静态文件请求保留独立 RequestLog。未进入代理的入口拒绝和未命中仍保留请求结果。代理失败补充有界脱敏诊断，200 后流异常也会记录，TraceID 沿用入口 RequestID。`gateway log` 默认 -tail 100 -f；支持 -cat/-head/-tail、-f、-json/-raw 和显式文件。logv 支持 stdin 和 .gz+.dict 文件。默认实时字典压缩；日志保留策略成对清理 .gz/.dict，保留当前文件和无关备份。查看日志不启动 Gateway 服务。
 
-### 实时日志开发联动（未发布，2026-11-12）
+### 实时压缩日志（v1.5.28）
 
-本次通过 go.mod 的显式本地 replace 联动 timer、log、discover、starter、service，不依赖 go.work。文件日志默认采用 `.gz` + 同文件级 `.dict`；两份文件必须一起管理，使用 logv 或应用内置 log/logv 读取。`NoCompress=true` 保留旧明文格式。发布前须按依赖顺序发布新版本并移除临时 replace；当前索引版本仍表示已发布版本。
+正式依赖已按顺序发布，go.mod 不保留本地开发 replace。文件日志默认采用 `.gz` + 同文件级 `.dict`，两份文件须一起管理；通过 logv 或内置 log/logv 读取，NoCompress=true 可保留明文。
+
+
+### Release v1.5.28 — 2026-11-12
+
+Released GitHub dependencies; no local development replacements. Full tests and benchmarks validated with GOWORK=off.

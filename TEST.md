@@ -474,3 +474,8 @@ GOWORK=off go test -v ./... and go test -bench=. ./... passed using published Gi
 ## 日志依赖联动 — 2026-11-12
 
 开发验证使用 GOWORK=off 与 go.mod 的显式本地 replace；执行完整测试、全量基准（benchtime=100ms），API 用 go doc 与导出源码交叉核对。结果记录在 /tmp/apigo-gateway-integration-*.txt。
+
+
+## v1.5.28 发布验证 — 2026-11-12
+
+GOWORK=off；正式 GitHub 依赖，无本地 replace。完整 go test -v ./... 与 go test -bench=. -benchtime=100ms ./... 通过；Service/Gateway 设置 GODEBUG=http2xconnect=1。API 核对使用 go doc . 与导出源码（getExports 工具不可用）。可选外部环境测试按原规则跳过。详细输出 /tmp/apigo-gateway-release-tests.txt 与 /tmp/apigo-gateway-release-bench.txt。

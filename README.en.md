@@ -201,4 +201,9 @@ Gateway enables compact ProxyLog for proxies instead of duplicate RequestLog. St
 
 ### Realtime log integration (unreleased, 2026-11-12)
 
-Explicit local go.mod replacements link this change without go.work. File logs default to paired .gz/.dict files, read using logv or built-in application log commands. Keep both files together; NoCompress retains plaintext. Release dependencies in order and remove development replacements before tagging. Published version claims remain unchanged.
+Released in v1.5.28 with published dependencies and no development replacements. File logs use paired .gz/.dict files; read through logv or embedded commands. Keep both files together; NoCompress retains plaintext.
+
+
+### Release v1.5.28 — 2026-11-12
+
+Released GitHub dependencies; no local development replacements. Full tests and benchmarks validated with GOWORK=off.
