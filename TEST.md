@@ -470,3 +470,7 @@ GOWORK=off go test -v ./... and go test -bench=. ./... passed using published Gi
 
 - Gateway 默认启用代理精简而不启用 GET 日志抑制；历史明文和压缩/字典配对保留策略、活跃文件及备份保护。
 - 全量回归/基准使用 GODEBUG=http2xconnect=1、GOWORK=off，以及 /tmp/apigo-validation-gateway.mod 显式替换本次本地模块。API 用 go doc 与源码核对。
+
+## 日志依赖联动 — 2026-11-12
+
+开发验证使用 GOWORK=off 与 go.mod 的显式本地 replace；执行完整测试、全量基准（benchtime=100ms），API 用 go doc 与导出源码交叉核对。结果记录在 /tmp/apigo-gateway-integration-*.txt。
