@@ -479,3 +479,29 @@ GOWORK=off go test -v ./... and go test -bench=. ./... passed using published Gi
 ## v1.5.28 发布验证 — 2026-11-12
 
 GOWORK=off；正式 GitHub 依赖，无本地 replace。完整 go test -v ./... 与 go test -bench=. -benchtime=100ms ./... 通过；Service/Gateway 设置 GODEBUG=http2xconnect=1。API 核对使用 go doc . 与导出源码（getExports 工具不可用）。可选外部环境测试按原规则跳过。详细输出 /tmp/apigo-gateway-release-tests.txt 与 /tmp/apigo-gateway-release-bench.txt。
+
+## 依赖联动验证（2026-11-14，未发布）
+
+GOWORK=off，显式替换 safe/crypto；test: 0, bench: 0。0 表示通过；非零或超时结果待定位，不能视为验收通过。
+
+## 最终依赖图验证（2026-11-14，未发布）
+
+显式本地 replace 覆盖本轮待发布依赖链；GOWORK=off go mod tidy、go test -v ./...、go test -bench=. -benchtime=1x ./...。基准按固定 1 次采样，避免排除计时的昂贵准备阶段反复校准。本轮结果：[('tidy', '0'), ('test', '0'), ('bench', '0')]。0 为通过，其他结果待定位。
+
+固定一次采样的基准摘要（非稳定性能测量）：
+
+```text
+BenchmarkACLScope/directory-16        	       1	     41291 ns/op	   91912 B/op	     214 allocs/op
+BenchmarkACLScope/script-16           	       1	    170917 ns/op	  237080 B/op	    2104 allocs/op
+BenchmarkACL/none-16                  	       1	     35667 ns/op	   87088 B/op	     203 allocs/op
+```
+
+## v1.5.29 正式发布验证（2026-11-14）
+
+GOWORK=off；移除全部 replace，使用已发布依赖。go mod tidy、go test -v ./...、go test -bench=. ./...、go mod verify 均通过。API 工具不可用，使用 go doc 与源码核对。
+
+```text
+BenchmarkACLScope/directory-16        	98218094	        10.35 ns/op	      16 B/op	       1 allocs/op
+BenchmarkACLScope/script-16           	  756376	      1342 ns/op	    3039 B/op	      44 allocs/op
+BenchmarkACL/none-16                  	1000000000	         0.3595 ns/op	       0 B/op	       0 allocs/op
+```
